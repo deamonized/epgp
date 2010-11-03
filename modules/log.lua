@@ -18,7 +18,6 @@
 local mod = EPGP:NewModule("log", "AceComm-3.0")
 
 local L = LibStub:GetLibrary("AceLocale-3.0"):GetLocale("EPGP")
-local GS = LibStub("LibGuildStorage-1.0")
 local JSON = LibStub("LibJSON-1.0")
 local deformat = LibStub("LibDeformat-3.0")
 
@@ -101,7 +100,7 @@ function mod:GetLogRecord(i)
 end
 
 function mod:CanUndo()
-  if not CanEditOfficerNote() or not GS:IsCurrentState() then
+  if not CanEditOfficerNote() then
     return false
   end
   return #self.db.profile.log ~= 0
@@ -132,7 +131,7 @@ function mod:UndoLastAction()
 end
 
 function mod:CanRedo()
-  if not CanEditOfficerNote() or not GS:IsCurrentState() then
+  if not CanEditOfficerNote() then
     return false
   end
 
@@ -169,7 +168,7 @@ function mod:Snapshot()
     self.db.profile.snapshot = t
   end
   t.time = GetTimestamp()
-  GS:Snapshot(t)
+  -- GS:Snapshot(t)
 end
 
 local function swap(t, i, j)

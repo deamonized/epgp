@@ -46,7 +46,7 @@ local global_config_defs = {
 
 local function ParseGuildInfo(loc)
   if not EPGP.db then
-    Debug("EPGP db not loaded")
+    Debug("EPGP db not fully loaded")
     return
   end
   local info = GetGuildInfoText()

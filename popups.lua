@@ -1,6 +1,5 @@
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 local GP = LibStub("LibGearPoints-1.0")
-local GS = LibStub("LibGuildStorage-1.0")
 
 local function SaveAnchors(t, ...)
   for n=1,select('#', ...) do
@@ -38,7 +37,7 @@ StaticPopupDialogs["EPGP_CONFIRM_GP_CREDIT"] = {
   OnAccept = function(self)
                local link = self.itemFrame.link
                local gp = tonumber(self.editBox:GetText())
-               EPGP:IncGPBy(self.name, link, gp)
+               EPGP:AddGP(gp, link, self.name)
              end,
 
   OnAlt = function(self)
@@ -82,7 +81,7 @@ StaticPopupDialogs["EPGP_CONFIRM_GP_CREDIT"] = {
   OnUpdate = function(self, elapsed)
                local link = self.itemFrame.link
                local gp = tonumber(self.editBox:GetText())
-               if EPGP:CanIncGPBy(link, gp) then
+               if EPGP:CanAddGP(gp, link, self.name) then
                  self.button1:Enable()
                else
                  self.button1:Disable()
@@ -147,6 +146,7 @@ StaticPopupDialogs["EPGP_BOSS_DEAD"] = {
   hasEditBox = 1,
   OnAccept = function(self)
                local ep = tonumber(self.editBox:GetText())
+               -- TODO(alkis): FIX
                EPGP:IncMassEPBy(self.reason, ep)
              end,
 
@@ -160,7 +160,8 @@ StaticPopupDialogs["EPGP_BOSS_DEAD"] = {
 
   OnUpdate = function(self, elapsed)
                local ep = tonumber(self.editBox:GetText())
-               if EPGP:CanIncEPBy(self.reason, ep) then
+               -- TODO(alkis): FIX
+               if EPGP:CanAddEP(ep, self.reason) then
                  self.button1:Enable()
                else
                  self.button1:Disable()
@@ -185,6 +186,7 @@ StaticPopupDialogs["EPGP_BOSS_ATTEMPT"] = {
   hasEditBox = 1,
   OnAccept = function(self)
                local ep = tonumber(self.editBox:GetText())
+               -- TODO(alkis): FIX
                EPGP:IncMassEPBy(self.reason .. " (attempt)", ep)
              end,
 
@@ -198,7 +200,8 @@ StaticPopupDialogs["EPGP_BOSS_ATTEMPT"] = {
 
   OnUpdate = function(self, elapsed)
                local ep = tonumber(self.editBox:GetText())
-               if EPGP:CanIncEPBy(self.reason, ep) then
+               -- TODO(alkis): FIX
+               if EPGP:CanAddEP(ep, self.reason) then
                  self.button1:Enable()
                else
                  self.button1:Disable()
