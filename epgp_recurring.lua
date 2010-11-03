@@ -1,5 +1,4 @@
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
-local GS = LibStub("LibGuildStorage-1.0")
 local Debug = LibStub("LibDebug-1.0")
 
 local callbacks = EPGP.callbacks
@@ -13,7 +12,7 @@ local function RecurringTicker(self, elapsed)
 
   local vars = EPGP.db.profile
   local now = GetTime()
-  if now > vars.next_award and GS:IsCurrentState() then
+  if now > vars.next_award then
     EPGP:IncMassEPBy(vars.next_award_reason, vars.next_award_amount)
     vars.next_award =
       vars.next_award + vars.recurring_ep_period_mins * 60

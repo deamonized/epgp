@@ -2,7 +2,6 @@
 
 local mod = EPGP:NewModule("ui")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
-local GS = LibStub("LibGuildStorage-1.0")
 local GP = LibStub("LibGearPoints-1.0")
 
 local EPGPWEB = "http://www.epgpweb.com"
@@ -643,12 +642,20 @@ local function AddGPControls(frame)
   button:SetScript(
     "OnUpdate",
     function(self)
-      if EPGP:CanIncGPBy(UIDropDownMenu_GetText(dropDown),
-                         editBox:GetNumber()) then
+      if EPGP:CanAddGP(editBox:GetNumber(),
+                       UIDropDownMenu_GetText(dropDown),
+                       EPGPSideFrame.name) then
         self:Enable()
       else
         self:Disable()
       end
+    end)
+  button:SetScript(
+    "OnClick",
+    function(self)
+      EPGP:AddGP(editBox:GetNumber(),
+                 UIDropDownMenu_GetText(gpFrame.dropDown),
+                 EPGPSideFrame.name)
     end)
 
   frame:SetHeight(
@@ -782,6 +789,7 @@ local function AddEPControls(frame, withRecurring)
       reason = otherEditBox:GetText()
     end
     local amount = editBox:GetNumber()
+    -- TODO(alkis): FIX
     if EPGP:CanIncEPBy(reason, amount) then
       self:Enable()
     else
@@ -952,13 +960,6 @@ local function CreateEPGPSideFrame(self)
   gpFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 15, -30)
   gpFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", -15, -30)
   AddGPControls(gpFrame)
-  gpFrame.button:SetScript(
-    "OnClick",
-    function(self)
-      EPGP:IncGPBy(f.name,
-                   UIDropDownMenu_GetText(gpFrame.dropDown),
-                   gpFrame.editBox:GetNumber())
-    end)
 
   local epFrame = CreateFrame("Frame", nil, f)
   epFrame:SetPoint("TOPLEFT", gpFrame, "BOTTOMLEFT", 0, -15)
@@ -972,6 +973,7 @@ local function CreateEPGPSideFrame(self)
         reason = epFrame.otherEditBox:GetText()
       end
       local amount = epFrame.editBox:GetNumber()
+      -- TODO(alkis): FIX
       EPGP:IncEPBy(f.name, reason, amount)
     end)
 
@@ -1016,6 +1018,7 @@ local function CreateEPGPSideFrame2()
         reason = epFrame.otherEditBox:GetText()
       end
       local amount = epFrame.editBox:GetNumber()
+      -- TODO(alkis): FIX
       EPGP:IncMassEPBy(reason, amount)
     end)
 
@@ -1289,12 +1292,13 @@ local function CreateEPGPFrameStandings()
     r:SetScript(
       "OnEnter",
       function(self)
+        local info = EPGP:GetMemberInfo(self.name)
         GameTooltip_SetDefaultAnchor(GameTooltip, self)
-        GameTooltip:AddLine(GS:GetRank(self.name))
-        if EPGP:GetNumAlts(self.name) > 0 then
+        GameTooltip:AddLine(info.rank)
+        if #info.alts > 0 then
           GameTooltip:AddLine("\n"..L["Alts"])
-          for i=1,EPGP:GetNumAlts(self.name) do
-            GameTooltip:AddLine(EPGP:GetAlt(self.name, i), 1, 1, 1)
+          for i=1,#info.alts do
+            GameTooltip:AddLine(info.alts[i], 1, 1, 1)
           end
         end
         GameTooltip:ClearAllPoints()
@@ -1306,37 +1310,33 @@ local function CreateEPGPFrameStandings()
 
   -- Hook up the headers
   tabl.headers[1]:SetScript(
-    "OnClick", function(self) EPGP:StandingsSort("NAME") end)
+    "OnClick", function(self) EPGP:SortStandings("NAME") end)
   tabl.headers[2]:SetScript(
-    "OnClick", function(self) EPGP:StandingsSort("EP") end)
+    "OnClick", function(self) EPGP:SortStandings("EP") end)
   tabl.headers[3]:SetScript(
-    "OnClick", function(self) EPGP:StandingsSort("GP") end)
+    "OnClick", function(self) EPGP:SortStandings("GP") end)
   tabl.headers[4]:SetScript(
-    "OnClick", function(self) EPGP:StandingsSort("PR") end)
+    "OnClick", function(self) EPGP:SortStandings("PR") end)
 
   -- Install the update function on rowFrame.
   local function UpdateStandings()
-    if not rowFrame.needUpdate then return end
+    if not rowFrame:IsShown() or not rowFrame.needUpdate then return end
 
     local offset = FauxScrollFrame_GetOffset(EPGPScrollFrame)
-    local numMembers = EPGP:GetNumMembers()
+    local numMembers = EPGP:GetNumStandingsMembers()
     local numDisplayedMembers = math.min(#rowFrame.rows, numMembers - offset)
     local minEP = EPGP:GetMinEP()
     for i=1,#rowFrame.rows do
       local row = rowFrame.rows[i]
       local j = i + offset
       if j <= numMembers then
-        row.name = EPGP:GetMember(j)
+        local class, name, ep, gp, pr = EPGP:GetStandingsInfo(j)
+        row.name = name
         row.cells[1]:SetText(row.name)
-        local c = RAID_CLASS_COLORS[EPGP:GetClass(row.name)]
+        local c = RAID_CLASS_COLORS[class]
         row.cells[1]:SetTextColor(c.r, c.g, c.b)
-        local ep, gp = EPGP:GetEPGP(row.name)
         row.cells[2]:SetText(ep)
         row.cells[3]:SetText(gp)
-        local pr = 0
-        if gp then
-          pr = ep / gp
-        end
         if pr > 9999 then
           row.cells[4]:SetText(math.floor(pr))
         else
@@ -1373,13 +1373,12 @@ local function CreateEPGPFrameStandings()
       function(self)
         self.name = nil
         rowFrame.needUpdate = true
-        UpdateStandings()
       end)
     rowFrame.needUpdate = nil
   end
 
   rowFrame:SetScript("OnUpdate", UpdateStandings)
-  EPGP.RegisterCallback(rowFrame, "StandingsChanged",
+  EPGP.RegisterCallback(rowFrame, "StandingsUpdate",
                         function() rowFrame.needUpdate = true end)
   rowFrame:SetScript("OnShow", UpdateStandings)
   scrollBar:SetScript(
