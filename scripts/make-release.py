@@ -59,25 +59,57 @@ def ListFiles(r):
   return result
 
 def UpdateToc(toc, new_version):
+  unchanged = False
   assert(os.path.exists(toc))
   lines = list()
   file = open(toc, 'r')
   for line in file:
     if line.startswith('## Version:'):
-      line = '## Version: %s\n' % new_version
-    lines.append(line)
+      new_line = '## Version: %s\n' % new_version
+      lines.append(new_line)
+      if new_line == line:
+        unchanged = True
+    else:
+      lines.append(line)
   file.close()
 
   file = open(toc, 'w')
   file.write("".join(lines))
   file.close()
 
-def CheckRepositoryStatus():
+  return unchanged
+
+def RunAndReadOutput(*command):
+  lines = list()
+  result = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  for line in result.stdout:
+    lines.append(line)
+  result.wait()
+  if result.returncode != 0:
+    logging.info("Command failed: %s" % ' '.join(command))
+    return None
+
+  return lines
+
+def CheckRepositoryStatus(version):
+  # Have we tagged this version before?
+  lines = RunAndReadOutput('hg', 'tags')
+  if lines is None:
+    return False
+
+  for line in lines:
+    tag, root = line.split()
+    if tag == 'v%s' % version:
+      logging.info("Version %s already appears to be in the repository; aborting" % version)
+      return False
+
   # Check our current repo status; if we get something besides 'C'
   # (clean) or 'I' (ignored), fail.
-  result = subprocess.Popen(['hg', 'status', '-A'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  lines = RunAndReadOutput('hg', 'status', '-A')
+  if lines is None:
+    return False
   bad_files = list()
-  for line in result.stdout:
+  for line in lines:
     status, filename = line.strip().split(" ", 1)
     if status not in ('C', 'I'):
       bad_files.append(filename)
@@ -102,13 +134,14 @@ def main(argv=None):
     print >> sys.stderr, 'Invalid version string: %s' % version
     return 2
 
-  if not CheckRepositoryStatus():
+  if not CheckRepositoryStatus(version):
     return 2
 
   epgp_root = util.FindAddonRootDir('epgp')
   epgp_toc = os.path.join(epgp_root, 'epgp.toc')
   logging.info('Updating %s with version info' % epgp_toc)
-  UpdateToc(epgp_toc, version)
+  if not UpdateToc(epgp_toc, version):
+    logging.info('Version did not change, cannot commit')
 
   tmp_dir = tempfile.mkdtemp()
   logging.info('Temporary directory: %s' % tmp_dir)
