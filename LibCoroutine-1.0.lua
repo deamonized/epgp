@@ -2,63 +2,112 @@
 --
 -- Check LibMapData for how to put this on wowace.
 local MAJOR_VERSION = "LibCoroutine-1.0"
-local MINOR_VERSION = tonumber(("$Revision: 1023 $"):match("%d+")) or 0
+local MINOR_VERSION = 10000
 
 local lib, oldMinor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
-local AT = LibStub("AceTimer-3.0")
-local AE = LibStub("AceEvent-3.0")
+local CallbackHandler = LibStub("CallbackHandler-1.0")
 
-local function running_co_checked()
-  local co = coroutine.running()
-  assert(co, "Should not be called from the main thread")
-  return co
+local AT = LibStub("AceTimer-3.0")
+
+local function tissubset(t1, t2)
+  for k,v in pairs(t1) do
+    if t2[k] ~= v then
+      if type(t2[k]) ~= "table" or type(v) ~= "table" then
+        return false
+      end
+
+      if not tissubset(t2[k], v) then
+        return false
+      end
+    end
+  end
+  return true
 end
 
-local function runner(co, ...)
+local function tisequal(t1, t2)
+  return tissubset(t1, t2) and tissubset(t2, t1)
+end
+
+local function coresume(co, ...)
   local ok, err = coroutine.resume(co, ...)
   if not ok then
-    error(err)
+    geterrorhandler()(err)
   end
 end
 
+function lib:Condition(...)
+  local co = coroutine.running()
+  local expected_args = {...}
+  local signalled = false
+  local timed_out = false
+  local timer_handle
+  local cond = {}
+  function cond.Signal()
+    if not signalled then
+      signalled = true
+      AT:CancelTimer(timer_handle, true)
+      timer_handle = nil
+      if coroutine.status(co) == "suspended" then
+        coresume(co, timed_out)
+      end
+    end
+  end
+  function cond.SignalIfMatching(...)
+    if not signalled then
+      if tisequal(expected_args, {...}) then
+        cond.Signal()
+      end
+    end
+  end
+  function cond.Wait(timeout)
+    if not signalled then
+      if timeout then
+        timer_handle = AT:ScheduleTimer(
+          function()
+            timed_out = true
+            cond.Signal()
+          end, timeout)
+      end
+      return coroutine.yield(co)
+    end
+    return timed_out
+  end
+
+  return cond
+end
+
 function lib:Yield()
-  return self:Sleep(0)
+  local cond = self:Condition()
+  cond.Wait(0)
 end
 
 function lib:Sleep(t)
-  local co = running_co_checked()
-  AT:ScheduleTimer(runner, t, co)
-  return coroutine.yield(co)
-end
-
-local function event_runner(co, event, ...)
-  AE.UnregisterEvent(co, event)
-  runner(co, ...)
-end
-
-function lib:WaitForEvent(event)
-  local co = running_co_checked()
-  AE.RegisterEvent(co, event, event_runner, co)
-  return coroutine.yield(co)
-end
-
-local function message_runner(co, message, ...)
-  AE.UnregisterMessage(co, message)
-  runner(co, ...)
-end
-
-function lib:WaitForMessage(message)
-  local co = running_co_checked()
-  AE.RegisterMessage(co, message, message_runner, co)
-  return coroutine.yield(co)
+  local cond = self:Condition()
+  cond.Wait(t)
 end
 
 function lib:RunAsync(fn, ...)
   local co = coroutine.create(fn)
-  AT:ScheduleTimer(function(args) runner(args[1], unpack(args, 2)) end,
-                   0, {co, ...})
+  AT:ScheduleTimer(
+    function(args) coresume(args[1], unpack(args, 2)) end,
+    0,
+    {co, ...})
+end
+
+function lib:WaitOnAny(timeout, ...)
+  local barrier = self:Condition()
+
+  for i=1,select('#', ...) do
+    self:RunAsync(function(...)
+                    local cond = select(i, ...)
+                    cond.Wait(timeout)
+                    barrier.Signal()
+                  end, ...)
+  end
+
+  return barrier.Wait(timeout)
 end
 
 -- /run LibStub("LibCoroutine-1.0"):UnitTest()
@@ -66,21 +115,49 @@ function lib:UnitTest()
   function RunTests(i)
     print("running tests async. expecting 1 as arg. got ", i)
 
-    print("waiting for foo message")
-    lib:WaitForMessage("foo")
-    print("done")
+    local cond, cond2
+    print("signal a condition before wait is called - no timeout")
+    cond = lib:Condition()
+    cond.Signal()
+    print("done", "[timed_out=", cond.Wait(), "]")
 
-    print("waiting for foo message with 1 as arg")
-    n = lib:WaitForMessage("foo")
-    print("done. got: ", n)
+    print("signal a condition before wait is called - with timeout")
+    cond = lib:Condition()
+    cond.Signal()
+    cond.Wait(1)
+    print("done", "[timed_out=", cond.Wait(1), "]")
 
-    print("sleeping for 1 sec")
-    lib:Sleep(1)
-    print("done")
+    print("signal a condition after wait is called - no timeout")
+    cond = lib:Condition()
+    AT:ScheduleTimer(cond.Signal, 0)
+    print("done", "[timed_out=", cond.Wait(), "]")
+
+    print("signal a condition after wait is called - with timeout")
+    cond = lib:Condition()
+    AT:ScheduleTimer(cond.Signal, 0)
+    print("done", "[timed_out=", cond.Wait(1), "]")
+
+    print("signal a condition with a matcher - args match/no timeout")
+    cond = lib:Condition(1, 2)
+    cond.SignalIfMatching(1, 2)
+    print("done", "[timed_out=", cond.Wait(1), "]")
+
+    print("signal a condition with a matcher - args do not match/timeout")
+    cond = lib:Condition(1, 2)
+    cond.SignalIfMatching(1)
+    print("done", "[timed_out=", cond.Wait(1), "]")
+
+    print("wait on two conditions and wait for timeout")
+    cond = lib:Condition()
+    cond2 = lib:Condition()
+    print("done", "[timed_out=", lib:WaitOnAny(1, cond, cond2), "]")
+
+    print("wait on two conditions and signal one")
+    cond = lib:Condition()
+    cond2 = lib:Condition()
+    AT:ScheduleTimer(cond.Signal, 0)
+    print("done", "[timed_out=", lib:WaitOnAny(1, cond, cond2), "]")
   end
 
   lib:RunAsync(RunTests, 1)
-
-  AT:ScheduleTimer(function() AE:SendMessage("foo") end, 1)
-  AT:ScheduleTimer(function() AE:SendMessage("foo", 1) end, 2)
 end

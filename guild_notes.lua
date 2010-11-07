@@ -264,7 +264,9 @@ C:RunAsync(
 
     while true do
       GuildRoster()
-      C:WaitForEvent("GUILD_ROSTER_UPDATE")
+      local cond = C:Condition()
+      EPGP.RegisterEvent(cond, "GUILD_ROSTER_UPDATE", cond.Signal)
+      cond.Wait()
       ParseGuildRoster()
     end
   end)
