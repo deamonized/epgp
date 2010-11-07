@@ -38,7 +38,7 @@ local function coresume(co, ...)
 end
 
 function lib:Condition(...)
-  local co = coroutine.running()
+  local co
   local expected_args = {...}
   local signalled = false
   local timed_out = false
@@ -49,7 +49,7 @@ function lib:Condition(...)
       signalled = true
       AT:CancelTimer(timer_handle, true)
       timer_handle = nil
-      if coroutine.status(co) == "suspended" then
+      if co and coroutine.status(co) == "suspended" then
         coresume(co, timed_out)
       end
     end
@@ -62,6 +62,7 @@ function lib:Condition(...)
     end
   end
   function cond.Wait(timeout)
+    co = coroutine.running()
     if not signalled then
       if timeout then
         timer_handle = AT:ScheduleTimer(
