@@ -2,6 +2,7 @@
 
 local Debug = LibStub("LibDebug-1.0")
 Debug:EnableDebugging()
+Debug:Toggle()
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 local GP = LibStub("LibGearPoints-1.0")
 
@@ -171,33 +172,25 @@ function EPGP:OnInitialize()
     end
   end
 
-  -- Display any notes if this is a new version.
-  if self.db.global.last_version ~= self.version then
-    self.db.global.last_version = self.version
-    StaticPopup_Show("EPGP_NEW_VERSION")
-  end
-
   -- This is a different GUILD_ROSTER_UPDATE handler. This handles
   -- enabling/disabling the addon and gathering basic information the
   -- whole addon depends on.
   local function GuildRosterUpdate()
     if not IsInGuild() then
-      if self:IsEnabled() then
-        for name, module in EPGP:IterateModules() do
-          if module:Disable() then
-            Debug("Disabled module (NotInGuild): %s", name)
-          end
-        end
-        if self:Disable() then
-          Debug("Disabled EPGP (NotInGuild)")
+      if self:Disable() then
+        Debug("Disabled EPGP (NotInGuild)")
+      end
+      for name, module in EPGP:IterateModules() do
+        if module:Disable() then
+          Debug("Disabled module (NotInGuild): %s", name)
         end
       end
     else
       if not self:IsEnabled() then
         -- If we are not enabled this means we haven't finished
         -- initializing for this guild yet. Set profile and enable modules.
-        local guild = GetGuildInfo("player") or ""
-        if #guild == 0 then
+        local guild = GetGuildInfo("player")
+        if not guild or #guild == 0 then
           Debug("Got empty guild. Running GuildRoster() again")
           GuildRoster()
           return
@@ -216,10 +209,7 @@ function EPGP:OnInitialize()
             end
           end
         end
-      end
-      -- It is possible that we just got enabled.
-      if self:IsEnabled() then
-        -- TODO(alkis): More initialization goes here.
+        self:ParseGuildInfo()
       end
     end
   end
@@ -228,7 +218,18 @@ function EPGP:OnInitialize()
 end
 
 function EPGP:OnEnable()
+  -- Display any notes if this is a new version.
+  if self.db.global.last_version ~= self.version then
+    self.db.global.last_version = self.version
+    StaticPopup_Show("EPGP_NEW_VERSION")
+  end
+
   EPGP:RegisterChatCommand("epgp", "ProcessChatCommand")
+  EPGP:RegisterEvent("GUILD_ROSTER_UPDATE")
+end
+
+function EPGP:GUILD_ROSTER_UPDATE()
+  self:ParseGuildInfo()
 end
 
 function EPGP:ProcessChatCommand(str)

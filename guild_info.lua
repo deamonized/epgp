@@ -44,14 +44,13 @@ local global_config_defs = {
   },
 }
 
-local function ParseGuildInfo(loc)
-  if not EPGP.db then
-    Debug("EPGP db not fully loaded")
-    return
-  end
+function EPGP:ParseGuildInfo()
+  assert(self:IsEnabled())
+
   local info = GetGuildInfoText()
-  if not info then
+  if not info or #info == 0 then
     Debug("GuildInfoText empty or nil, ignoring")
+    GuildRoster()
     return
   end
   Debug("Parsing GuildInfoText")
@@ -81,12 +80,11 @@ local function ParseGuildInfo(loc)
   end
   for var, def in pairs(global_config_defs) do
     local old_value = EPGP.db.profile[var]
-    EPGP.db.profile[var] = new_config[var] or def.default
+    self.db.profile[var] = new_config[var] or def.default
     if old_value ~= EPGP.db.profile[var] then
-      Debug("%s changed from %s to %s", var, old_value, EPGP.db.profile[var])
-      EPGP.callbacks:Fire(def.change_message, EPGP.db.profile[var])
+      Debug("%s changed from %s to %s", var, old_value, self.db.profile[var])
+      self:SendMessage(def.change_message, self.db.profile[var])
     end
   end
 end
 
-AE:RegisterEvent("GUILD_ROSTER_UPDATE", ParseGuildInfo)
