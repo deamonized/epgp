@@ -41,6 +41,7 @@ localization\localization.xml
 core.lua
 guild_info.lua
 guild_notes.lua
+master.lua
 standings.lua
 epgp_recurring.lua
 

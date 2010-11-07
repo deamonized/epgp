@@ -7,9 +7,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 local GP = LibStub("LibGearPoints-1.0")
 
 local EPGP = LibStub("AceAddon-3.0"):NewAddon(
-  "EPGP", "AceComm-3.0", "AceEvent-3.0", "AceConsole-3.0")
+  "EPGP", "AceComm-3.0", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
+
 -- The callbacks.
--- TODO(alkis): Use AceEvent:Messages instead.
 EPGP.callbacks = LibStub("CallbackHandler-1.0"):New(EPGP)
 
 _G.EPGP = EPGP
@@ -224,8 +224,10 @@ function EPGP:OnEnable()
     StaticPopup_Show("EPGP_NEW_VERSION")
   end
 
-  EPGP:RegisterChatCommand("epgp", "ProcessChatCommand")
-  EPGP:RegisterEvent("GUILD_ROSTER_UPDATE")
+  self:RegisterChatCommand("epgp", "ProcessChatCommand")
+  self:RegisterMasterElectionComms()
+  self:StartElectionLoop()
+  self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end
 
 function EPGP:GUILD_ROSTER_UPDATE()
