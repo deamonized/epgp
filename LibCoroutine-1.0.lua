@@ -132,6 +132,11 @@ function lib:UnitTest()
     AT:ScheduleTimer(cond.Signal, 0)
     print("done", "[timed_out=", cond.Wait(), "]")
 
+    print("signal a condition with SignalIfMatching")
+    cond = lib:Condition()
+    AT:ScheduleTimer(cond.SignalIfMatching, 0, 1)
+    print("done", "[timed_out=", cond.Wait(1), "]")
+
     print("signal a condition after wait is called - with timeout")
     cond = lib:Condition()
     AT:ScheduleTimer(cond.Signal, 0)
