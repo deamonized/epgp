@@ -38,11 +38,10 @@ LibLootNotify-1.0.lua
 
 localization\localization.xml
 
-epgp.lua
+core.lua
 guild_info.lua
 guild_notes.lua
 standings.lua
-epgp_options.lua
 epgp_recurring.lua
 
 modules\announce.lua
