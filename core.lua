@@ -10,9 +10,19 @@ local EPGP = LibStub("AceAddon-3.0"):NewAddon(
   "EPGP", "AceComm-3.0", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 -- The callbacks.
-EPGP.callbacks = LibStub("CallbackHandler-1.0"):New(EPGP)
+local callbacks = LibStub("CallbackHandler-1.0"):New(EPGP)
 
 _G.EPGP = EPGP
+
+-- Comm strings.
+-- no args
+EPGP.MASTER_ELECTION = "EPGP_MaEle"
+-- no args
+EPGP.MASTER_VICTORY = "EPGP_MaVic"
+-- REQUESTOR,ID,REASON(,NAME,CN,EP,RAW_GP)+
+EPGP.CHANGE_ANNOUNCE = "EPGP_ChAnn"
+-- ID,REASON,DELTA_EP,DELTA_GP(,NAME)+
+EPGP.CHANGE_REQUEST = "EPGP_ChReq"
 
 -- The module prototype.
 local moduleProto = {}
@@ -172,7 +182,7 @@ function EPGP:OnInitialize()
     end
   end
 
-  -- This is a different GUILD_ROSTER_UPDATE handler. This handles
+  -- This is a special GUILD_ROSTER_UPDATE handler. This handles
   -- enabling/disabling the addon and gathering basic information the
   -- whole addon depends on.
   local function GuildRosterUpdate()
@@ -225,8 +235,6 @@ function EPGP:OnEnable()
   end
 
   self:RegisterChatCommand("epgp", "ProcessChatCommand")
-  self:RegisterMasterElectionComms()
-  self:StartElectionLoop()
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end
 

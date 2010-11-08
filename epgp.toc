@@ -41,17 +41,19 @@ localization\localization.xml
 core.lua
 guild_info.lua
 guild_notes.lua
-master.lua
 standings.lua
 epgp_recurring.lua
 
 modules\announce.lua
 modules\boss.lua
+modules\election.lua
 modules\gptooltip.lua
 modules\ldb.lua
 modules\log.lua
 modules\loot.lua
+modules\master.lua
 modules\popups.lua
+modules\slave.lua
 modules\ui.lua
 modules\warnings.lua
 modules\whisper.lua
