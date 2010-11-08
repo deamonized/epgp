@@ -4,7 +4,6 @@ local Debug = LibStub("LibDebug-1.0")
 Debug:EnableDebugging()
 Debug:Toggle()
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
-local GP = LibStub("LibGearPoints-1.0")
 
 local EPGP = LibStub("AceAddon-3.0"):NewAddon(
   "EPGP", "AceComm-3.0", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
@@ -234,76 +233,9 @@ function EPGP:OnEnable()
     StaticPopup_Show("EPGP_NEW_VERSION")
   end
 
-  self:RegisterChatCommand("epgp", "ProcessChatCommand")
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end
 
 function EPGP:GUILD_ROSTER_UPDATE()
   self:ParseGuildInfo()
-end
-
-function EPGP:ProcessChatCommand(str)
-  str = str:gsub("%%t", UnitName("target") or "notarget")
-  local command, nextpos = self:GetArgs(str, 1)
-  if command == "config" then
-    InterfaceOptionsFrame_OpenToCategory("EPGP")
-  elseif command == "debug" then
-    Debug:Toggle()
-  elseif command == "massep" then
-    local reason, amount = self:GetArgs(str, 2, nextpos)
-    amount = tonumber(amount)
-    if self:CanIncEPBy(reason, amount) then
-      self:IncMassEPBy(reason, amount)
-    end
-  elseif command == "ep" then
-    local member, reason, amount = self:GetArgs(str, 3, nextpos)
-    amount = tonumber(amount)
-    if self:CanIncEPBy(reason, amount) then
-      self:IncEPBy(member, reason, amount)
-    end
-  elseif command == "gp" then
-    local member, itemlink, amount = self:GetArgs(str, 3, nextpos)
-    self:Print(member, itemlink, amount)
-    if amount then
-      amount = tonumber(amount)
-    else
-      local gp1, gp2 = GP:GetValue(itemlink)
-      self:Print(gp1, gp2)
-      -- Only automatically fill amount if we have a single GP value.
-      if gp1 and not gp2 then
-        amount = gp1
-      end
-    end
-
-    if self:CanIncGPBy(itemlink, amount) then
-      self:IncGPBy(member, itemlink, amount)
-    end
-  elseif command == "decay" then
-    if EPGP:CanDecayEPGP() then
-      StaticPopup_Show("EPGP_DECAY_EPGP", EPGP:GetDecayPercent())
-    end
-  elseif command == "help" then
-    local help = {
-      self.version,
-      "   config - "..L["Open the configuration options"],
-      "   debug - "..L["Open the debug window"],
-      "   massep <reason> <amount> - "..L["Mass EP Award"],
-      "   ep <name> <reason> <amount> - "..L["Award EP"],
-      "   gp <name> <itemlink> [<amount>] - "..L["Credit GP"],
-      "   decay - "..L["Decay of EP/GP by %d%%"]:format(EPGP:GetDecayPercent()),
-    }
-    EPGP:Print(table.concat(help, "\n"))
-  else
-    EPGP:ToggleUI()
-  end
-end
-
-function EPGP:ToggleUI()
-  if EPGPFrame and IsInGuild() then
-    if EPGPFrame:IsShown() then
-      HideUIPanel(EPGPFrame)
-    else
-      ShowUIPanel(EPGPFrame)
-    end
-  end
 end

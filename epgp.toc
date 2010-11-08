@@ -46,6 +46,7 @@ epgp_recurring.lua
 
 modules\announce.lua
 modules\boss.lua
+modules\chat_command.lua
 modules\election.lua
 modules\gptooltip.lua
 modules\ldb.lua
