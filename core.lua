@@ -10,6 +10,7 @@ local EPGP = LibStub("AceAddon-3.0"):NewAddon(
 
 -- The callbacks.
 local callbacks = LibStub("CallbackHandler-1.0"):New(EPGP)
+EPGP.callbacks = callbacks
 
 _G.EPGP = EPGP
 
@@ -181,49 +182,10 @@ function EPGP:OnInitialize()
     end
   end
 
-  -- This is a special GUILD_ROSTER_UPDATE handler. This handles
-  -- enabling/disabling the addon and gathering basic information the
-  -- whole addon depends on.
-  local function GuildRosterUpdate()
-    if not IsInGuild() then
-      if self:Disable() then
-        Debug("Disabled EPGP (NotInGuild)")
-      end
-      for name, module in EPGP:IterateModules() do
-        if module:Disable() then
-          Debug("Disabled module (NotInGuild): %s", name)
-        end
-      end
-    else
-      if not self:IsEnabled() then
-        -- If we are not enabled this means we haven't finished
-        -- initializing for this guild yet. Set profile and enable modules.
-        local guild = GetGuildInfo("player")
-        if not guild or #guild == 0 then
-          Debug("Got empty guild. Running GuildRoster() again")
-          GuildRoster()
-          return
-        else
-          if self.db:GetCurrentProfile() ~= guild then
-            Debug("Setting DB profile to: %s", guild)
-            self.db:SetProfile(guild)
-          end
-          if self:Enable() then
-            Debug("Enabled EPGP (OnInit)")
-          end
-          -- Enable modules that are supposed to be enabled.
-          for name, module in self:IterateModules() do
-            if module.db.profile.enabled and module:Enable() then
-              Debug("Enabled module (OnInit): %s", name)
-            end
-          end
-        end
-        self:ParseGuildInfo()
-      end
-    end
-  end
-  LibStub("AceEvent-3.0"):RegisterEvent("GUILD_ROSTER_UPDATE",
-                                        GuildRosterUpdate)
+
+  -- We register this event before we are even enabled because this
+  -- event controls initialization.
+  self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end
 
 function EPGP:OnEnable()
@@ -232,10 +194,54 @@ function EPGP:OnEnable()
     self.db.global.last_version = self.version
     StaticPopup_Show("EPGP_NEW_VERSION")
   end
+end
 
-  self:RegisterEvent("GUILD_ROSTER_UPDATE")
+function EPGP:OnDisable()
+  -- OnEmbedDisabled is called after OnDisable. This means AceEvent's
+  -- OnEmbedDisable will unregister all handlers. So after this is
+  -- done, we need to register again for GUILD_ROSTER_UPDATE so that
+  -- we are enabled again when we join a guild. To do this we schedule
+  -- a timer to grab the event. Yuck indeed :-p
+  self:ScheduleTimer("RegisterEvent", 0, "GUILD_ROSTER_UPDATE")
 end
 
 function EPGP:GUILD_ROSTER_UPDATE()
-  self:ParseGuildInfo()
+  -- This is a special GUILD_ROSTER_UPDATE handler. This handles
+  -- enabling/disabling the addon and gathering basic information the
+  -- addon and its modules depend on.
+  if not IsInGuild() then
+    if self:Disable() then
+      Debug("Disabled EPGP (NotInGuild)")
+    end
+    for name, module in EPGP:IterateModules() do
+      if module:Disable() then
+        Debug("Disabled module (NotInGuild): %s", name)
+      end
+    end
+  else
+    if not self:IsEnabled() then
+      -- If we are not enabled this means we haven't finished
+      -- initializing for this guild yet. Set profile and enable modules.
+      local guild = GetGuildInfo("player")
+      if not guild or #guild == 0 then
+        Debug("Got empty guild. Running GuildRoster() again")
+        GuildRoster()
+        return
+      else
+        if self.db:GetCurrentProfile() ~= guild then
+          Debug("Setting DB profile to: %s", guild)
+          self.db:SetProfile(guild)
+        end
+        if self:Enable() then
+          Debug("Enabled EPGP (OnInit)")
+        end
+        -- Enable modules that are supposed to be enabled.
+        for name, module in self:IterateModules() do
+          if module.db.profile.enabled and module:Enable() then
+            Debug("Enabled module (OnInit): %s", name)
+          end
+        end
+      end
+    end
+  end
 end

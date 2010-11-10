@@ -1,6 +1,7 @@
+local mod = EPGP:NewModule("guild_info", "AceEvent-3.0")
+
 local Debug = LibStub("LibDebug-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
-local AE = LibStub("AceEvent-3.0")
 
 -- Parse options. Options are inside GuildInfo and are inside a -EPGP-
 -- block. Possible options are:
@@ -44,7 +45,7 @@ local global_config_defs = {
   },
 }
 
-function EPGP:ParseGuildInfo()
+function mod:GUILD_ROSTER_UPDATE()
   assert(self:IsEnabled())
 
   local info = GetGuildInfoText()
@@ -88,3 +89,6 @@ function EPGP:ParseGuildInfo()
   end
 end
 
+function mod:OnEnable()
+  self:RegisterEvent("GUILD_ROSTER_UPDATE")
+end
