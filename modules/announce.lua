@@ -176,7 +176,7 @@ function mod:SetEvent(i, e, v)
   self.db.profile.events[e] = v
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   for e, _ in pairs(mod.optionsArgs.events.values) do
     if self.db.profile.events[e] then
       Debug("Enabling announce of: %s (startup)", e)
@@ -185,6 +185,6 @@ function mod:OnEnable()
   end
 end
 
-function mod:OnDisable()
+function mod:OnModuleDisable()
   EPGP.UnregisterAllCallbacks(self)
 end

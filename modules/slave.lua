@@ -67,7 +67,7 @@ end
 
 --------------------------------------------------------------------------------
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:ScheduleRepeatingTimer("ProcessRequestQueue", 15)
   EPGP:GetModule("election").RegisterMessage(

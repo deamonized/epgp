@@ -25,6 +25,16 @@ EPGP.CHANGE_ANNOUNCE = "EPGP_ChAnn"
 EPGP.CHANGE_REQUEST = "EPGP_ChReq"
 
 -- The module prototype.
+
+-- Addon and modules start disabled. See GUILD_ROSTER_UPDATE for why.
+EPGP:SetEnabledState(false)
+EPGP:SetDefaultModuleState(false)
+
+
+-- EPGP modules are special. They already have OnInitialize, OnEnable
+-- and OnDisable functions defined. Developers should override
+-- OnModuleInitialize, OnModuleEnable and OnModuleDisable instead.
+
 local moduleProto = {}
 function moduleProto:IsDisabled(self, i)
   return not self:IsEnabled()
@@ -45,11 +55,26 @@ end
 function moduleProto:SetDBVar(self, i, v)
   self.db.profile[i[#i]] = v
 end
-EPGP:SetDefaultModulePrototype(moduleProto)
+function moduleProto:OnEnable()
+  -- If we are about to be enabled but the config says we should not,
+  -- disable now.
+  if not self.db.profile.enabled then
+    self:Disable()
+    return
+  end
 
--- Addon and modules start disabled.
-EPGP:SetEnabledState(false)
-EPGP:SetDefaultModuleState(false)
+  if self.OnModuleEnable then self:OnModuleEnable() end
+  Debug("Enabled module: %s", self:GetName())
+end
+function moduleProto:OnDisable()
+  if self.OnModuleDisable then self:OnModuleDisable() end
+  Debug("Disabled module: %s", self:GetName())
+end
+function moduleProto:OnInitialize()
+  if self.OnModuleInitialize then self:OnModuleInitialize() end
+end
+
+EPGP:SetDefaultModulePrototype(moduleProto)
 
 function EPGP:OnInitialize()
   -- The db.
@@ -182,7 +207,6 @@ function EPGP:OnInitialize()
     end
   end
 
-
   -- We register this event before we are even enabled because this
   -- event controls initialization.
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
@@ -194,6 +218,14 @@ function EPGP:OnEnable()
     self.db.global.last_version = self.version
     StaticPopup_Show("EPGP_NEW_VERSION")
   end
+
+  -- Set enabled state on all modules otherwise they won't be enabled
+  -- after this call returns.
+  for name, module in self:IterateModules() do
+    module:SetEnabledState(true)
+  end
+
+  Debug("Enabled EPGP")
 end
 
 function EPGP:OnDisable()
@@ -203,6 +235,7 @@ function EPGP:OnDisable()
   -- we are enabled again when we join a guild. To do this we schedule
   -- a timer to grab the event. Yuck indeed :-p
   self:ScheduleTimer("RegisterEvent", 0, "GUILD_ROSTER_UPDATE")
+  Debug("Disabled EPGP")
 end
 
 function EPGP:GUILD_ROSTER_UPDATE()
@@ -210,14 +243,7 @@ function EPGP:GUILD_ROSTER_UPDATE()
   -- enabling/disabling the addon and gathering basic information the
   -- addon and its modules depend on.
   if not IsInGuild() then
-    if self:Disable() then
-      Debug("Disabled EPGP (NotInGuild)")
-    end
-    for name, module in EPGP:IterateModules() do
-      if module:Disable() then
-        Debug("Disabled module (NotInGuild): %s", name)
-      end
-    end
+    self:Disable()
   else
     if not self:IsEnabled() then
       -- If we are not enabled this means we haven't finished
@@ -232,15 +258,7 @@ function EPGP:GUILD_ROSTER_UPDATE()
           Debug("Setting DB profile to: %s", guild)
           self.db:SetProfile(guild)
         end
-        if self:Enable() then
-          Debug("Enabled EPGP (OnInit)")
-        end
-        -- Enable modules that are supposed to be enabled.
-        for name, module in self:IterateModules() do
-          if module.db.profile.enabled and module:Enable() then
-            Debug("Enabled module (OnInit): %s", name)
-          end
-        end
+        self:Enable()
       end
     end
   end

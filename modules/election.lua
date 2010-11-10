@@ -62,7 +62,7 @@ function mod:ProcessMasterVictory(prefix, msg, type, sender)
   end
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   -- Reset the master when we are enabled (say after a Disable/Enable pair).
   master = nil
   self:RegisterComm(EPGP.MASTER_ELECTION, "ProcessMasterElection")

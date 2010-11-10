@@ -89,6 +89,6 @@ function mod:GUILD_ROSTER_UPDATE()
   end
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end

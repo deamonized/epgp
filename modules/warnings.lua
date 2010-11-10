@@ -31,7 +31,7 @@ mod.dbDefaults = {
   }
 }
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   local function officer_note_warning()
     StaticPopup_Show("EPGP_OFFICER_NOTE_WARNING")
   end

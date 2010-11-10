@@ -108,12 +108,12 @@ mod.optionsArgs = {
   },
 }
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterEvent("PLAYER_REGEN_DISABLED")
   self:RegisterEvent("PLAYER_REGEN_ENABLED")
   LLN.RegisterCallback(self, "LootReceived", LootReceived)
 end
 
-function mod:OnDisable()
+function mod:OnModuleDisable()
   LLN.UnregisterAllCallbacks(self)
 end

@@ -101,7 +101,7 @@ local function dxeCallback(event, encounter)
   BossAttempt("kill", encounter.name)
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterEvent("PLAYER_REGEN_DISABLED")
   self:RegisterEvent("PLAYER_REGEN_ENABLED")
   if DBM then
@@ -117,7 +117,7 @@ function mod:OnEnable()
   end
 end
 
-function mod:OnDisable()
+function mod:OnModuleDisable()
   if DXE then
     DXE.UnregisterCallback(mod, "TriggerDefeat")
   end

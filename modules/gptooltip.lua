@@ -57,7 +57,7 @@ mod.optionsArgs = {
   },
 }
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   GP:SetQualityThreshold(self.db.profile.threshold)
 
   local obj = EnumerateFrames()

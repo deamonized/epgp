@@ -70,6 +70,6 @@ function mod:ToggleUI()
   end
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterChatCommand("epgp", "ProcessChatCommand")
 end

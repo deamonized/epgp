@@ -323,7 +323,7 @@ mod.dbDefaults = {
   }
 }
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   EPGP.RegisterCallback(mod, "EPAward", AppendToLog, "EP")
   EPGP.RegisterCallback(mod, "GPAward", AppendToLog, "GP")
   EPGP.RegisterCallback(mod, "BankedItem", AppendToLog, "BI")

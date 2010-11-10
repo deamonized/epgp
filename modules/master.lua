@@ -56,7 +56,7 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   tinsert(self.db.profile.req_queue, req)
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:RegisterComm(EPGP.CHANGE_REQUEST, "ProcessChangeRequest")
   EPGP:GetModule("election").RegisterMessage(

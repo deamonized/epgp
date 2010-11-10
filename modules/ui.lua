@@ -1390,7 +1390,7 @@ local function CreateEPGPFrameStandings()
     end)
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   if not EPGPFrame then
     CreateEPGPFrame()
     CreateEPGPFrameStandings()

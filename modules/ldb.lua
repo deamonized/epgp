@@ -11,7 +11,7 @@ function mod:RecurringAwardUpdate(event_type, reason, amount, time_left)
   self.ldb.text = string.format(L["Next award in "] .. fmt, val)
 end
 
-function mod:OnEnable()
+function mod:OnModuleEnable()
   local LDB = LibStub("LibDataBroker-1.1")
   if not LDB then return end
   if self.ldb then return end
