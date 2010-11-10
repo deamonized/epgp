@@ -56,7 +56,7 @@ function mod:ProcessChatCommand(str)
     }
     EPGP:Print(table.concat(help, "\n"))
   else
-    EPGP:ToggleUI()
+    self:ToggleUI()
   end
 end
 
