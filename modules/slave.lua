@@ -70,6 +70,6 @@ end
 function mod:OnEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:ScheduleRepeatingTimer("ProcessRequestQueue", 15)
-  EPGP:GetModule("election").RegisterCallback(
+  EPGP:GetModule("election").RegisterMessage(
     self, "MasterChanged", function(_, new_master) master = new_master end)
 end

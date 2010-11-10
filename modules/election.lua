@@ -1,8 +1,8 @@
-local mod = EPGP:NewModule("election", "AceComm-3.0", "AceTimer-3.0")
+local mod = EPGP:NewModule("election",
+                           "AceComm-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local Debug = LibStub("LibDebug-1.0")
 
-local callbacks = LibStub("CallbackHandler-1.0"):New(mod)
 local master = nil
 local timeout_handle = nil
 
@@ -37,7 +37,7 @@ function mod:ProcessMasterElection(prefix, msg, type, sender)
     local my_info = EPGP:GetMemberInfo(me)
     if InfoLess(info, my_info) then
       master = nil
-      callbacks:Fire("MasterChanged", master)
+      self:SendMessage("MasterChanged", master)
     else
       self:SendCommMessage(EPGP.MASTER_VICTORY, "", GUILD, nil, "ALERT")
     end
@@ -57,7 +57,7 @@ function mod:ProcessMasterVictory(prefix, msg, type, sender)
     if master ~= sender then
       master = sender
       Debug("New master is %s", sender)
-      callbacks:Fire("MasterChanged", master)
+      self:SendMessage("MasterChanged", master)
     end
   end
 end
