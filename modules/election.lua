@@ -13,8 +13,10 @@ mod.dbDefaults = {
 }
 
 local function InfoLess(a, b)
-  if a.rank ~= b.rank then return a.rank < b.rank end
-  return a.name < b.name
+  if a.GetRankIndex() ~= b.GetRankIndex() then
+    return a.GetRankIndex() < b.GetRankIndex()
+  end
+  return a.GetName() < b.GetName()
 end
 
 function mod:DoElection()

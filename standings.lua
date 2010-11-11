@@ -17,9 +17,10 @@ local function BuildStandings()
     local name = GetGuildRosterInfo(i)
     local info = EPGP:GetMemberInfo(name)
     -- Show all mains that have ep.
-    if info.main == nil and info.ep ~= nil then
+    if info and info.GetMain() == nil and info.GetEP() ~= nil then
       table.insert(standings,
-                   {info.class, info.name, info.ep, info.gp, info.ep / info.gp})
+                   {info.GetClass(), info.GetName(),
+                    info.GetEP(), info.GetGP(), info.GetEP() / info.GetGP()})
     end
   end
   Debug(tostring(debugprofilestop()).."ms for BuildStandings()")

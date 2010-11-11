@@ -20,7 +20,7 @@ local function map(f, t)
   return r
 end
 
--- This function changes the core interface and it is intentional.
+-- This function changes the core interface.
 function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
   tinsert(mod.db.profile.req_queue, {
             mod.db.profile.next_id,

@@ -39,7 +39,6 @@ LibLootNotify-1.0.lua
 localization\localization.xml
 
 core.lua
-guild_notes.lua
 standings.lua
 epgp_recurring.lua
 
@@ -49,6 +48,7 @@ modules\chat_command.lua
 modules\election.lua
 modules\gptooltip.lua
 modules\guild_info.lua
+modules\guild_notes.lua
 modules\ldb.lua
 modules\log.lua
 modules\loot.lua
