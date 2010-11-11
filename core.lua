@@ -229,7 +229,7 @@ function EPGP:OnEnable()
 end
 
 function EPGP:OnDisable()
-  -- OnEmbedDisabled is called after OnDisable. This means AceEvent's
+  -- OnEmbedDisable is called after OnDisable. This means AceEvent's
   -- OnEmbedDisable will unregister all handlers. So after this is
   -- done, we need to register again for GUILD_ROSTER_UPDATE so that
   -- we are enabled again when we join a guild. To do this we schedule
