@@ -263,3 +263,16 @@ function EPGP:GUILD_ROSTER_UPDATE()
     end
   end
 end
+
+
+-- Utitily functions.
+function EPGP.Profile(fn, msg)
+  return function(...)
+           Debug(msg)
+           debugprofilestart()
+           local ret = {fn(...)}
+           local time_ms = debugprofilestop()
+           Debug("%s (%.2fms)", msg, time_ms)
+           return unpack(ret)
+         end
+end

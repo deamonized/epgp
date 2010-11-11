@@ -142,17 +142,6 @@ function EPGP:GetMemberInfo(name)
   return cache[name]
 end
 
-local function ProfilingWrapper(fn, msg)
-  return function(...)
-           debugprofilestart()
-           Debug(msg)
-           local ret = {fn(...)}
-           local time_ms = debugprofilestop()
-           Debug("%s (%.2fms)", msg, time_ms)
-           return unpack(ret)
-         end
-end
-
 local function GUILD_ROSTER_UPDATE(self, event, loc)
   if loc then return end
   local totalMembers = GetNumGuildMembers()
@@ -190,8 +179,8 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
   end
 
   -- Switch to the post init function.
-  self.GUILD_ROSTER_UPDATE = ProfilingWrapper(GUILD_ROSTER_UPDATE,
-                                              "Updating member infos")
+  self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE,
+                                          "Updating member infos")
   -- And run it now.
   self.GUILD_ROSTER_UPDATE(self, event, loc)
 end
@@ -207,8 +196,8 @@ function mod:OnModuleEnable()
   -- 3...) All other passes update this state accordingly.
   EPGP:GetModule("guild_info").RegisterMessage(self, "BaseGPChanged")
 
-  self.GUILD_ROSTER_UPDATE = ProfilingWrapper(GUILD_ROSTER_UPDATE_INIT,
-                                              "Creating member infos")
+  self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE_INIT,
+                                          "Creating member infos")
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
 end
 
