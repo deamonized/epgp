@@ -12,14 +12,6 @@ mod.dbDefaults = {
   }
 }
 
-local function map(f, t)
-  local r = {}
-  for i,v in ipairs(t) do
-    r[i] = f(v)
-  end
-  return r
-end
-
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   -- If we are not the sender we need to store this in the journal for backup.
   local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+)(.+)")
@@ -29,7 +21,7 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   if sender ~= UnitName("player") then
     local req = {requestor, id, reason}
     for name, cn, ep, raw_gp in rest:gmatch(",([^,]+),(%d+),(%d+),(%d+)") do
-      cn, ep, raw_gp = unpack(map(tonumber, {cn, ep, raw_gp}))
+      cn, ep, raw_gp = unpack(EPGP.Map(tonumber, {cn, ep, raw_gp}))
 
       tinsert(req, name)
       tinsert(req, cn)
@@ -47,7 +39,7 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
 
   local id, reason, delta_ep, delta_gp, rest = msg:match(
     "(%d+),([^,]+),(%d+),(%d+)(.+)")
-  id, delta_ep, delta_gp = unpack(map(tonumber, {id, delta_ep, delta_gp}))
+  id, delta_ep, delta_gp = unpack(EPGP.Map(tonumber, {id, delta_ep, delta_gp}))
 
   local req = {sender, id, reason, delta_ep, delta_gp}
   for target in rest:gmatch(",([^,]+)") do
