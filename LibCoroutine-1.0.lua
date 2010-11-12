@@ -37,56 +37,71 @@ local function coresume(co, ...)
   end
 end
 
-function lib:Condition(...)
+function lib:Notification(...)
   local co
   local expected_args = {...}
-  local signalled = false
-  local timed_out = false
   local timer_handle
-  local cond = {}
-  function cond.Signal()
-    if not signalled then
-      signalled = true
-      AT:CancelTimer(timer_handle, true)
-      timer_handle = nil
-      if co and coroutine.status(co) == "suspended" then
-        coresume(co, timed_out)
-      end
-    end
-  end
-  function cond.SignalIfMatching(...)
-    if not signalled then
-      if tisequal(expected_args, {...}) then
-        cond.Signal()
-      end
-    end
-  end
-  function cond.Wait(timeout)
-    co = coroutine.running()
-    if not signalled then
-      if timeout then
-        timer_handle = AT:ScheduleTimer(
-          function()
-            timed_out = true
-            cond.Signal()
-          end, timeout)
-      end
-      return coroutine.yield(co)
-    end
-    return timed_out
+  local ret  -- 0 means timed out. N means Nth cond was signalled.
+  local hook  -- Used for WaitOnAny.
+  local notif = {}
+
+  local function SignalN(n)
+    return function()
+             if ret then return end
+             ret = n
+             AT:CancelTimer(timer_handle, true)
+             timer_handler = nil
+             if notif._hook then notif._hook() end
+             if co and coroutine.status(co) == "suspended" then
+               coresume(co, ret)
+             end
+           end
   end
 
-  return cond
+  function notif.Signalled()
+    return ret ~= nil
+  end
+
+  notif.Signal = SignalN(1)
+
+  function notif.SignalIfMatching(...)
+    if ret then return end
+    if tisequal(expected_args, {...}) then
+      notif.Signal()
+    end
+  end
+  function notif.Wait(timeout)
+    if ret then return ret end
+    co = coroutine.running()
+    if timeout then
+      timer_handle = AT:ScheduleTimer(SignalN(0), timeout)
+    end
+    return coroutine.yield(co)
+  end
+  function notif.WaitOnAny(timeout, ...)
+    if ret then return ret end
+    for i=1,select('#', ...) do
+      local n = select(i, ...)
+      if n.Signalled() then return i+1 end
+    end
+    co = coroutine.running()
+    for i=1,select('#', ...) do
+      select(i, ...)._hook = SignalN(i+1)
+    end
+    return notif.Wait(timeout)
+  end
+
+  return notif
 end
 
 function lib:Yield()
-  local cond = self:Condition()
-  cond.Wait(0)
+  local notif = self:Notification()
+  notif.Wait(0)
 end
 
 function lib:Sleep(t)
-  local cond = self:Condition()
-  cond.Wait(t)
+  local notif = self:Notification()
+  notif.Wait(t)
 end
 
 function lib:RunAsync(fn, ...)
@@ -97,18 +112,8 @@ function lib:RunAsync(fn, ...)
     {co, ...})
 end
 
-function lib:WaitOnAny(timeout, ...)
-  local barrier = self:Condition()
-
-  for i=1,select('#', ...) do
-    self:RunAsync(function(...)
-                    local cond = select(i, ...)
-                    cond.Wait(timeout)
-                    barrier.Signal()
-                  end, ...)
-  end
-
-  return barrier.Wait(timeout)
+function lib:WaitOnAny(timeout, notif, ...)
+  return notif.WaitOnAny(timeout, ...)
 end
 
 -- /run LibStub("LibCoroutine-1.0"):UnitTest()
@@ -116,53 +121,59 @@ function lib:UnitTest()
   function RunTests(i)
     print("running tests async. expecting 1 as arg. got ", i)
 
-    local cond, cond2
-    print("signal a condition before wait is called - no timeout")
-    cond = lib:Condition()
-    cond.Signal()
-    print("done", "[timed_out=", cond.Wait(), "]")
+    local notif, notif2
+    print("signal a notification before wait is called - no timeout")
+    notif = lib:Notification()
+    notif.Signal()
+    print("done", "[ret=", notif.Wait(), "]")
 
-    print("signal a condition before wait is called - with timeout")
-    cond = lib:Condition()
-    cond.Signal()
-    cond.Wait(1)
-    print("done", "[timed_out=", cond.Wait(1), "]")
+    print("signal a notification before wait is called - with timeout")
+    notif = lib:Notification()
+    notif.Signal()
+    notif.Wait(1)
+    print("done", "[ret=", notif.Wait(1), "]")
 
-    print("signal a condition after wait is called - no timeout")
-    cond = lib:Condition()
-    AT:ScheduleTimer(cond.Signal, 0)
-    print("done", "[timed_out=", cond.Wait(), "]")
+    print("signal a notification after wait is called - no timeout")
+    notif = lib:Notification()
+    AT:ScheduleTimer(notif.Signal, 0)
+    print("done", "[ret=", notif.Wait(), "]")
 
-    print("signal a condition with SignalIfMatching")
-    cond = lib:Condition()
-    AT:ScheduleTimer(cond.SignalIfMatching, 0, 1)
-    print("done", "[timed_out=", cond.Wait(1), "]")
+    print("signal a notification with SignalIfMatching")
+    notif = lib:Notification()
+    AT:ScheduleTimer(notif.SignalIfMatching, 0, 1)
+    print("done", "[ret=", notif.Wait(1), "]")
 
-    print("signal a condition after wait is called - with timeout")
-    cond = lib:Condition()
-    AT:ScheduleTimer(cond.Signal, 0)
-    print("done", "[timed_out=", cond.Wait(1), "]")
+    print("signal a notification after wait is called - with timeout")
+    notif = lib:Notification()
+    AT:ScheduleTimer(notif.Signal, 0)
+    print("done", "[ret=", notif.Wait(1), "]")
 
-    print("signal a condition with a matcher - args match/no timeout")
-    cond = lib:Condition(1, 2)
-    cond.SignalIfMatching(1, 2)
-    print("done", "[timed_out=", cond.Wait(1), "]")
+    print("signal a notification with a matcher - args match/no timeout")
+    notif = lib:Notification(1, 2)
+    notif.SignalIfMatching(1, 2)
+    print("done", "[ret=", notif.Wait(1), "]")
 
-    print("signal a condition with a matcher - args do not match/timeout")
-    cond = lib:Condition(1, 2)
-    cond.SignalIfMatching(1)
-    print("done", "[timed_out=", cond.Wait(1), "]")
+    print("signal a notification with a matcher - args do not match/timeout")
+    notif = lib:Notification(1, 2)
+    notif.SignalIfMatching(1)
+    print("done", "[ret=", notif.Wait(1), "]")
 
-    print("wait on two conditions and wait for timeout")
-    cond = lib:Condition()
-    cond2 = lib:Condition()
-    print("done", "[timed_out=", lib:WaitOnAny(1, cond, cond2), "]")
+    print("wait on two notifications and wait for timeout")
+    notif = lib:Notification()
+    notif2 = lib:Notification()
+    print("done", "[ret=", lib:WaitOnAny(1, notif, notif2), "]")
 
-    print("wait on two conditions and signal one")
-    cond = lib:Condition()
-    cond2 = lib:Condition()
-    AT:ScheduleTimer(cond.Signal, 0)
-    print("done", "[timed_out=", lib:WaitOnAny(1, cond, cond2), "]")
+    print("wait on two notifications and signal one before wait is called")
+    notif = lib:Notification()
+    notif2 = lib:Notification()
+    notif2.Signal()
+    print("done", "[ret=", lib:WaitOnAny(1, notif, notif2), "]")
+
+    print("wait on two notifications and signal one after wait is called")
+    notif = lib:Notification()
+    notif2 = lib:Notification()
+    AT:ScheduleTimer(notif2.Signal, 0)
+    print("done", "[ret=", lib:WaitOnAny(1, notif, notif2), "]")
   end
 
   lib:RunAsync(RunTests, 1)
