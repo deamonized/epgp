@@ -284,3 +284,45 @@ function EPGP.Map(fn, ...)
   end
   return unpack(r)
 end
+
+function EPGP.All(...)
+  for i=1,select('#', ...) do
+    if not select(i, ...) then
+      return false
+    end
+  end
+  return true
+end
+
+function EPGP.Any(...)
+  for i=1,select('#', ...) do
+    if select(i, ...) then
+      return true
+    end
+  end
+  return false
+end
+
+function EPGP.Not(pred)
+  return function(...) return not pred(...) end
+end
+
+function EPGP.IsString(v)
+  return type(v) == "string"
+end
+
+function EPGP.IsNumber(v)
+  return type(v) == "number"
+end
+
+function EPGP.IsInteger(v)
+  return EPGP.IsNumber(v) and math.floor(v + 0.5) == v
+end
+
+function EPGP.Between(a, b)
+  return function(v) return v > a and v < b end
+end
+
+function EPGP.EqualTo(a)
+  return function(v) return a == v end
+end

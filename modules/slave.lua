@@ -20,19 +20,6 @@ local function map(f, t)
   return r
 end
 
--- This function changes the core interface.
-function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
-  tinsert(mod.db.profile.req_queue, {
-            mod.db.profile.next_id,
-            reason,
-            delta_ep,
-            delta_gp,
-            ...
-          })
-  mod.db.profile.next_id = mod.db.profile.next_id + 1
-  mod:ProcessRequest(#mod.db.profile.req_queue)
-end
-
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+)(.+)")
   id = tonumber(id)
@@ -72,4 +59,36 @@ function mod:OnModuleEnable()
   self:ScheduleRepeatingTimer("ProcessRequestQueue", 15)
   EPGP:GetModule("election").RegisterMessage(
     self, "MasterChanged", function(_, new_master) master = new_master end)
+end
+
+--------------------------------------------------------------------------------
+-- These functions change the core interface.
+
+local Map = EPGP.Map
+local All = EPGP.All
+local Not = EPGP.Not
+local IsString = EPGP.IsString
+local IsInteger = EPGP.IsInteger
+local Between = EPGP.Between
+local EqualTo = EPGP.EqualTo
+
+function EPGP:CanChangeEPGP(reason, delta_ep, delta_gp, ...)
+  return CanEditOfficerNote() and
+         All(Map(IsString, reason, ...)) and
+         #reason > 0 and
+         All(Map(IsInteger, delta_ep, delta_gp)) and
+         All(Map(Between(-99999, 99999), delta_ep, delta_gp)) and
+         All(Map(Not(EqualTo(0)), delta_ep, delta_gp))
+end
+
+function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
+  tinsert(mod.db.profile.req_queue, {
+            mod.db.profile.next_id,
+            reason,
+            delta_ep,
+            delta_gp,
+            ...
+          })
+  mod.db.profile.next_id = mod.db.profile.next_id + 1
+  mod:ProcessRequest(#mod.db.profile.req_queue)
 end
