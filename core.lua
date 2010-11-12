@@ -277,10 +277,10 @@ function EPGP.Profile(fn, msg)
          end
 end
 
-function EPGP.Map(fn, t)
+function EPGP.Map(fn, ...)
   local r = {}
-  for i,v in ipairs(t) do
-    r[i] = fn(v)
+  for i=1,select('#', ...) do
+    r[i] = fn(select(i, ...))
   end
-  return r
+  return unpack(r)
 end

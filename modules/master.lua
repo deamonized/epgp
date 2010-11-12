@@ -21,7 +21,7 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   if sender ~= UnitName("player") then
     local req = {requestor, id, reason}
     for name, cn, ep, raw_gp in rest:gmatch(",([^,]+),(%d+),(%d+),(%d+)") do
-      cn, ep, raw_gp = unpack(EPGP.Map(tonumber, {cn, ep, raw_gp}))
+      cn, ep, raw_gp = EPGP.Map(tonumber, cn, ep, raw_gp)
 
       tinsert(req, name)
       tinsert(req, cn)
@@ -39,7 +39,7 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
 
   local id, reason, delta_ep, delta_gp, rest = msg:match(
     "(%d+),([^,]+),(%d+),(%d+)(.+)")
-  id, delta_ep, delta_gp = unpack(EPGP.Map(tonumber, {id, delta_ep, delta_gp}))
+  id, delta_ep, delta_gp = EPGP.Map(tonumber, id, delta_ep, delta_gp)
 
   local req = {sender, id, reason, delta_ep, delta_gp}
   for target in rest:gmatch(",([^,]+)") do
