@@ -2,40 +2,41 @@ local mod = EPGP:NewModule("master", "AceComm-3.0")
 
 local Debug = LibStub("LibDebug-1.0")
 local Map = EPGP.Map
+local TableInsert = EPGP.TableInsert
 
 local master
 
 mod.dbDefaults = {
   profile = {
     enabled = true,
-    req_queue = {},
     journal = {},
   }
 }
 
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
-  -- If we are not the sender we need to store this in the journal for backup.
-  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+)(.+)")
+  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+),(.+)")
+  Debug("Received change announce %s (%s)", msg, requestor)
+
+  -- If we are the sender everything is done already.
+  if sender == UnitName("player") then return end
+
   id = tonumber(id)
-
-  Debug("Received announce for request %s:%d", requestor, id)
-  if sender ~= UnitName("player") then
-    local req = {requestor, id, reason}
-    for name, cn, ep, raw_gp in rest:gmatch(",([^,]+),(%d+),(%d+),(%d+)") do
-      cn, ep, raw_gp = Map(tonumber, cn, ep, raw_gp)
-
-      tinsert(req, name)
-      tinsert(req, cn)
-      tinsert(req, ep)
-      tinsert(req, raw_gp)
-    end
-
-    tinsert(self.db.profile.journal, req)
+  local ann = {requestor, id, reason}
+  for name, sn, ep, raw_gp in rest:gmatch("([^,]+),(%d+),(%d+),(%d+)") do
+    sn, ep, raw_gp = Map(tonumber, sn, ep, raw_gp)
+    TableInsert(ann, name, sn, ep, raw_gp)
+    local info = EPGP:GetMemberInfo(name)
+    info.SetEP(ep)
+    info.SetRawGP(raw_gp)
+    info.SetVersion(v)
   end
+  Debug("Adding announce %s (%s) to journal", msg, requestor)
+  tinsert(self.db.profile.journal, ann)
+  -- TODO(alkis): Journal application and cleanup.
 end
 
 function mod:ProcessChangeRequest(prefix, msg, type, sender)
-  Debug("Received request %s (%s)", msg, sender)
+  Debug("Received changee request %s (%s)", msg, sender)
   if master ~= UnitName("player") then return end
 
   local id, reason, delta_ep, delta_gp, rest = msg:match(
@@ -43,10 +44,21 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   id, delta_ep, delta_gp = Map(tonumber, id, delta_ep, delta_gp)
 
   local req = {sender, id, reason, delta_ep, delta_gp}
+  local ann = {sender, id, reason}
   for target in rest:gmatch(",([^,]+)") do
-    table.insert(req, target)
+    local info = EPGP:GetMemberInfo(target)
+    local ep = info.GetEP() + delta_ep
+    local raw_gp = info.GetRawGP() + delta_gp
+    local v = info.GetVersion() + 1
+    TableInsert(ann, target, ep, raw_gp, v)
+    info.SetEP(ep)
+    info.SetRawGP(raw_gp)
+    info.SetVersion(v)
   end
-  tinsert(self.db.profile.req_queue, req)
+  table.insert(self.db.profile.journal, ann)
+  self:SendCommMessage(EPGP.CHANGE_ANNOUNCE,
+                       table.concat({Map(tostring, unpack(ann))}, ","),
+                       "GUILD", nil, "ALERT")
 end
 
 function mod:OnModuleEnable()
@@ -55,6 +67,3 @@ function mod:OnModuleEnable()
   EPGP:GetModule("election").RegisterMessage(
     self, "MasterChanged", function(_, new_master) master = new_master end)
 end
-
--- TODO(alkis): Journal cleanup.
--- TODO(alkis): Apply change requests and send out the change announcement.

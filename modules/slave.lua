@@ -21,17 +21,19 @@ local function map(f, t)
 end
 
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
-  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+)(.+)")
+  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+),(.+)")
   id = tonumber(id)
 
   Debug("Received announce for request %s:%d", requestor, id)
-  local req = {requestor, id, reason}
 
-  -- Remove request from the queue if it exists.
-  for i,r in ipairs(self.db.profile.req_queue) do
-    if r[1] == requestor and r[2] == id then
-      tremove(self.db.profile.req_queue, i)
-      break
+  -- If this was requested by us, remove request from the queue.
+  if requestor == UnitName("player") then
+     for i,r in ipairs(self.db.profile.req_queue) do
+      if r[1] == id then
+        Debug("Removing request %d from our queue", id)
+        tremove(self.db.profile.req_queue, i)
+        break
+      end
     end
   end
 end
@@ -82,6 +84,7 @@ function EPGP:CanChangeEPGP(reason, delta_ep, delta_gp, ...)
 end
 
 function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
+  assert(self:CanChangeEPGP(reason, delta_ep, delta_gp, ...))
   tinsert(mod.db.profile.req_queue, {
             mod.db.profile.next_id,
             reason,
@@ -92,3 +95,6 @@ function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
   mod.db.profile.next_id = mod.db.profile.next_id + 1
   mod:ProcessRequest(#mod.db.profile.req_queue)
 end
+
+-- TODO(alkis): Send out requests to everyone in guild.
+-- TODO(alkis): Store everyone's requests and send internal message (callback) for log/announce to work.
