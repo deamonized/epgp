@@ -280,14 +280,16 @@ end
 function EPGP.Map(fn, ...)
   local r = {}
   for i=1,select('#', ...) do
-    r[i] = fn(select(i, ...))
+    local item = select(i, ...)
+    r[i] = fn(item)
   end
   return unpack(r)
 end
 
 function EPGP.All(...)
   for i=1,select('#', ...) do
-    if not select(i, ...) then
+    local item = select(i, ...)
+    if not item then
       return false
     end
   end
@@ -296,7 +298,8 @@ end
 
 function EPGP.Any(...)
   for i=1,select('#', ...) do
-    if select(i, ...) then
+    local item = select(i, ...)
+    if item then
       return true
     end
   end
@@ -325,4 +328,11 @@ end
 
 function EPGP.EqualTo(a)
   return function(v) return a == v end
+end
+
+function EPGP.TableInsert(t, ...)
+  for i=1,select('#', ...) do
+    local item = select(i, ...)
+    table.insert(t, item)
+  end
 end
