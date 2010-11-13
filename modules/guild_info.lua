@@ -45,7 +45,8 @@ local global_config_defs = {
   },
 }
 
-function mod:GUILD_ROSTER_UPDATE()
+function mod:GUILD_ROSTER_UPDATE(event, loc)
+  if loc then return end
   assert(self:IsEnabled())
 
   local info = GetGuildInfoText()
