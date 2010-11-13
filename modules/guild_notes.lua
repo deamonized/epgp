@@ -3,6 +3,13 @@ local mod = EPGP:NewModule("guild_notes", "AceEvent-3.0")
 local Debug = LibStub("LibDebug-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 
+mod.dbDefaults = {
+  profile = {
+    enabled = true,
+    data = {},
+  }
+}
+
 local function BaseGP()
   return EPGP:GetModule("guild_info").db.profile.base_gp
 end
@@ -57,7 +64,7 @@ local function NewMemberInfo(new_name)
         info.RemoveMain()
       end
       local new_note = info.SetNote(note)
-      if new_note then
+      if new_note and CanEditOfficerNote() then
         Debug("Writing out note for %s: %s", name, new_note)
         GuildRosterSetOfficerNote(i, new_note)
       end
@@ -157,15 +164,21 @@ local function GUILD_ROSTER_UPDATE(self, event, loc)
     info.seen = true
   end
 
-  -- Remove seen marks and delete infos that are no longer valid.
+  -- Remove seen marks, delete infos that are no longer valid and
+  -- store a backup.
   for name, info in pairs(cache) do
     if info.seen then
       info.seen = nil
+      -- Backup only mains that have epgp info.
+      if not info.GetMain() and info.GetEP() then
+        self.db.profile.data[name] = info.GetNote()
+      end
     else
       for i, alt in ipairs(info.GetAlts()) do
         alt.RemoveMain(info)
       end
       cache[name] = nil
+      self.db.profile.data[name] = nil
     end
   end
 end
@@ -175,7 +188,8 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
   local totalMembers = GetNumGuildMembers()
   for i=1,totalMembers do
     local name = GetGuildRosterInfo(i)
-    cache[name] = NewMemberInfo(name)
+    local info = cache[name] or NewMemberInfo(name)
+    cache[name] = info
   end
 
   -- Switch to the post init function.
@@ -199,6 +213,11 @@ function mod:OnModuleEnable()
   self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE_INIT,
                                           "Creating member infos")
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
+  -- Init the cache from backup.
+  for name, note in pairs(self.db.profile.data) do
+    local info = NewMemberInfo(name)
+    info.SetNote(note)
+  end
 end
 
 function mod:OnModuleDisable()
