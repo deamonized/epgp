@@ -79,6 +79,7 @@ end
 -- These functions change the core interface.
 
 local All = EPGP.All
+local Any = EPGP.Any
 local Not = EPGP.Not
 local IsString = EPGP.IsString
 local IsInteger = EPGP.IsInteger
@@ -91,7 +92,7 @@ function EPGP:CanChangeEPGP(reason, delta_ep, delta_gp, ...)
          #reason > 0 and
          All(Map(IsInteger, delta_ep, delta_gp)) and
          All(Map(Between(-99999, 99999), delta_ep, delta_gp)) and
-         All(Map(Not(EqualTo(0)), delta_ep, delta_gp))
+         Any(Map(Not(EqualTo(0)), delta_ep, delta_gp))
 end
 
 function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
