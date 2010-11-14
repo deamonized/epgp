@@ -71,6 +71,7 @@ local function NewMemberInfo(new_name)
 
   function info.GetEP() return ep end
   function info.GetGP() return raw_gp and raw_gp + EPGP:GetBaseGP() or nil end
+  function info.GetPR() return info.GetEP() / info.GetGP() end
   function info.GetRawGP() return raw_gp end
   function info.GetSeq() return seq end
   function info.GetNote()
