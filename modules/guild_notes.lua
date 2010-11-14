@@ -85,13 +85,15 @@ local function NewMemberInfo(new_name)
   function info.GetAlts() return alts end
   function info.GetMain() return main end
 
-  function info.SetEP(n) ep = math.max(0, n) end
-  function info.SetGP(n) info.SetRawGP(n - EPGP:GetBaseGP()) end
-  function info.SetRawGP(n) raw_gp = math.max(0, n) end
-  function info.SetSeq(n)
-    if n > seq then GuildRoster() end
-    seq = n
+  function info.SetEPGP(e, g, s)
+    if s > seq then
+      ep = math.max(0, e)
+      raw_gp = math.max(0, g)
+      seq = s
+      GuildRoster()
+    end
   end
+
   function info.SetNote(new_note)
     local new_ep, new_raw_gp, new_seq = ParseNote(new_note)
     if not new_ep or not new_raw_gp or not new_seq then
@@ -110,8 +112,7 @@ local function NewMemberInfo(new_name)
   end
 
   local specials = {
-    "GetEP", "GetGP", "GetRawGP", "GetSeq",
-    "SetEP", "SetGP", "SetRawGP", "SetSeq",
+    "GetEP", "GetGP", "GetRawGP", "GetSeq", "SetEPGP"
   }
   -- Make _FunName copies of specials for use when moving methods around.
   for i,fn in ipairs(specials) do

@@ -344,3 +344,28 @@ function EPGP.TableInsert(t, ...)
     table.insert(t, item)
   end
 end
+
+local Map = EPGP.Map
+local TableInsert = EPGP.TableInsert
+
+function EPGP.ParseChangeAnnounce(msg)
+  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+),(.+)")
+  id = tonumber(id)
+  local ann = {requestor, id, reason}
+  for name, seq, ep, raw_gp in rest:gmatch("([^,]+),(%d+),(%d+),(%d+)") do
+    seq, ep, raw_gp = Map(tonumber, seq, ep, raw_gp)
+    TableInsert(ann, name, seq, ep, raw_gp)
+  end
+  return ann
+end
+
+function EPGP.ParseChangeRequest(msg)
+  local id, reason, delta_ep, delta_gp, rest = msg:match(
+    "(%d+),([^,]+),(%d+),(%d+)(.+)")
+  id, delta_ep, delta_gp = Map(tonumber, id, delta_ep, delta_gp)
+  local req = {id, reason, delta_ep, delta_gp}
+  for target in rest:gmatch(",([^,]+)") do
+    table.insert(req, target)
+  end
+  return req
+end

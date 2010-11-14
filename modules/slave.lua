@@ -14,20 +14,17 @@ mod.dbDefaults = {
 }
 
 local Map = EPGP.Map
-local MapT = EPGP.MapT
 
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
-  local requestor, id, reason, rest = msg:match("([^,]+),(%d+),([^,]+),(.+)")
-  Debug("Received change announce %s (%s)", msg, requestor)
+  local ann = EPGP.ParseChangeAnnounce(msg)
+  Debug("Received change announce %s (%s)", msg, ann[1])
 
-  id = tonumber(id)
-
-  -- Find the request that was announced, call callbacks with info and
-  -- then remove it.
+  -- Find the request that was announced, call callbacks with info
+  -- from request and then remove it.
   for i,r in ipairs(self.db.profile.req_queue) do
-    if r[1] == requestor and r[2] == id then
+    if r[1] == ann[1] and r[2] == ann[2] then
       self:SendMessage("ChangeAnnounced", unpack(r))
-      Debug("Removing request %s:%d from our queue", requestor, id)
+      Debug("Removing request %s:%d from our queue", r[1], r[2])
       tremove(self.db.profile.req_queue, i)
       break
     end
@@ -40,15 +37,8 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   -- If we are the sender we have this request in our queue.
   if sender == UnitName("player") then return end
 
-  local id, reason, delta_ep, delta_gp, rest = msg:match(
-    "(%d+),([^,]+),(%d+),(%d+)(.+)")
-  id, delta_ep, delta_gp = Map(tonumber, id, delta_ep, delta_gp)
-
-  local req = {sender, id, reason, delta_ep, delta_gp}
-  for target in rest:gmatch(",([^,]+)") do
-    table.insert(req, target)
-  end
-  table.insert(self.db.profile.req_queue, req)
+  local req = EPGP.ParseChangeRequest(msg)
+  table.insert(self.db.profile.req_queue, {sender, unpack(req)})
 end
 
 function mod:ProcessRequest(i)
