@@ -286,6 +286,14 @@ function EPGP.Map(fn, ...)
   return unpack(r)
 end
 
+function EPGP.MapT(fn, t)
+  local r = {}
+  for i,v in ipairs(t) do
+    r[i] = fn(v)
+  end
+  return r
+end
+
 function EPGP.All(...)
   for i=1,select('#', ...) do
     local item = select(i, ...)
