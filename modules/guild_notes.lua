@@ -1,4 +1,4 @@
-local mod = EPGP:NewModule("guild_notes", "AceEvent-3.0")
+local mod = EPGP:NewModule("guild_notes", "AceEvent-3.0", "AceTimer-3.0")
 
 local Debug = LibStub("LibDebug-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
@@ -187,7 +187,7 @@ local function GUILD_ROSTER_UPDATE(self, event, loc)
       self.db.profile.data[name] = nil
     end
   end
-  self:SendMessage("GuildRosterUpdate")
+  self:ScheduleTimer(function() self:SendMessage("GuildRosterUpdate") end, 0)
 end
 
 local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
@@ -204,7 +204,7 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
     local info = cache[name]
     info.Update(i)
   end
-  self:SendMessage("GuildRosterUpdate")
+  self:ScheduleTimer(function() self:SendMessage("GuildRosterUpdate") end, 0)
 
   -- Switch to the post init function.
   self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE,
