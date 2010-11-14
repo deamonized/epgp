@@ -141,11 +141,6 @@ local function NewMemberInfo(new_name)
   return info
 end
 
--- This function changes the core interface.
-function EPGP:GetMemberInfo(name)
-  return cache[name]
-end
-
 local function GUILD_ROSTER_UPDATE(self, event, loc)
   if loc then return end
   local totalMembers = GetNumGuildMembers()
@@ -215,4 +210,11 @@ function mod:OnModuleDisable()
   cache = {}
   self.GUILD_ROSTER_UPDATE = nil
   EPGP:GetModule("guild_info").UnregisterAllMessages(self)
+end
+
+--------------------------------------------------------------------------------
+-- These functions change the core interface.
+
+function EPGP:GetMemberInfo(name)
+  return cache[name]
 end
