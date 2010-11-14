@@ -8,7 +8,7 @@ mod.dbDefaults = {
     enabled = true,
     sort_order = "PR",
     show_offline = true,
-    show_only_raid = true,
+    show_raid_only = true,
   }
 }
 
@@ -19,7 +19,7 @@ function mod:ShouldShow(i)
   officernote, online, status, classFileName,
   achievementPoints, achievementRank, isMobile = GetGuildRosterInfo(i)
   if not self.db.profile.show_offline and not online then return false end
-  if self.db.profile.show_only_raid and UnitInRaid("player") and not UnitInRaid(name) then return false end
+  if self.db.profile.show_raid_only and UnitInRaid("player") and not UnitInRaid(name) then return false end
   local info = EPGP:GetMemberInfo(name)
   if info and info.GetEP() then return true end
   print(name)
@@ -105,5 +105,23 @@ function EPGP:GetNumStandingsMembers()
 end
 
 function EPGP:GetStandingsInfo(i)
-  return standings[i]
+  return unpack(standings[i])
+end
+
+function EPGP:GetStandingsShowOffline()
+  return mod.db.profile.show_offline
+end
+
+function EPGP:SetStandingsShowOffline(v)
+  mod.db.profile.show_offline = v
+  BuildStandings(mod)
+end
+
+function EPGP:GetStandingsShowRaidOnly()
+  return mod.db.profile.show_raid_only
+end
+
+function EPGP:SetStandingsShowRaidOnly(v)
+  mod.db.profile.show_raid_only = v
+  BuildStandings(mod)
 end
