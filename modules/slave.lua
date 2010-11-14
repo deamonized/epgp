@@ -10,8 +10,6 @@ mod.dbDefaults = {
   }
 }
 
-local master
-
 local function map(f, t)
   local r = {}
   for i,v in ipairs(t) do
@@ -39,13 +37,12 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
 end
 
 function mod:ProcessRequest(i)
-  if not master then return end
   local req = self.db.profile.req_queue[i]
 
   local str = table.concat(map(tostring, req), ",")
 
   Debug("Requesting change: %s", str)
-  self:SendCommMessage(EPGP.CHANGE_REQUEST, str, "WHISPER", master, "BULK")
+  self:SendCommMessage(EPGP.CHANGE_REQUEST, str, "GUILD", nil, "BULK")
 end
 
 function mod:ProcessRequestQueue()
@@ -59,8 +56,6 @@ end
 function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:ScheduleRepeatingTimer("ProcessRequestQueue", 15)
-  EPGP:GetModule("election").RegisterMessage(
-    self, "MasterChanged", function(_, new_master) master = new_master end)
 end
 
 --------------------------------------------------------------------------------
@@ -96,5 +91,4 @@ function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
   mod:ProcessRequest(#mod.db.profile.req_queue)
 end
 
--- TODO(alkis): Send out requests to everyone in guild.
 -- TODO(alkis): Store everyone's requests and send internal message (callback) for log/announce to work.
