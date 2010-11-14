@@ -64,6 +64,7 @@ local function NewMemberInfo(new_name)
       if new_note and CanEditOfficerNote() then
         Debug("Writing out note for %s: %s", name, new_note)
         GuildRosterSetOfficerNote(i, new_note)
+        return true
       end
     end
   end
@@ -86,7 +87,10 @@ local function NewMemberInfo(new_name)
   function info.SetEP(n) ep = math.max(0, n) end
   function info.SetGP(n) info.SetRawGP(n - EPGP:GetBaseGP()) end
   function info.SetRawGP(n) raw_gp = math.max(0, n) end
-  function info.SetSeq(n) seq = n end -- TODO(alkis): Rollover.
+  function info.SetSeq(n)
+    if n > seq then GuildRoster() end
+    seq = n
+  end
   function info.SetNote(new_note)
     local new_ep, new_raw_gp, new_seq = ParseNote(new_note)
     if not new_ep or not new_raw_gp or not new_seq then
@@ -148,11 +152,20 @@ local function GUILD_ROSTER_UPDATE(self, event, loc)
 
   for i=1,totalMembers do
     local name, _, _, _, _, _, _, note, _, _, _  = GetGuildRosterInfo(i)
-    local info = cache[name]
-    if not info then
-      info = NewMemberInfo(name)
+    local info = cache[name] or NewMemberInfo(name)
+    cache[name] = info
+    -- TODO(alkis): When this update happens on a not-online member,
+    -- we get a GUILD_ROSTER_UPDATE that does not contain the
+    -- change. This happens until a real GUILD_ROSTER_UPDATE comes 15
+    -- seconds later. This means for offline members we take about 15
+    -- seconds per offline member to update their note. Obviously this
+    -- needs to be fixed.
+    if info.Update(i) then
+      for name, info in pairs(cache) do
+        info.seen = nil
+      end
+      return
     end
-    info.Update(i)
     info.seen = true
   end
 
@@ -184,11 +197,15 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
     cache[name] = info
   end
 
+  for i=1, totalMembers do
+    local name = GetGuildRosterInfo(i)
+    local info = cache[name]
+    info.Update(i)
+  end
+
   -- Switch to the post init function.
   self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE,
                                           "Updating member infos")
-  -- And run it now.
-  self.GUILD_ROSTER_UPDATE(self, event, loc)
 end
 
 function mod:OnModuleEnable()
