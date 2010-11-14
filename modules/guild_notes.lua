@@ -187,6 +187,7 @@ local function GUILD_ROSTER_UPDATE(self, event, loc)
       self.db.profile.data[name] = nil
     end
   end
+  self:SendMessage("GuildRosterUpdate")
 end
 
 local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
@@ -203,6 +204,7 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
     local info = cache[name]
     info.Update(i)
   end
+  self:SendMessage("GuildRosterUpdate")
 
   -- Switch to the post init function.
   self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE,

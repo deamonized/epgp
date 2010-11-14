@@ -40,8 +40,8 @@ local function BuildStandings(self)
   end
   EPGP:SortStandings(EPGP:StandingsSortOrder())
 end
-mod.GUILD_ROSTER_UPDATE = EPGP.Profile(
-  BuildStandings, "Updating standings (GUILD_ROSTER_UPDATE)")
+mod.GuildRosterUpdate = EPGP.Profile(
+  BuildStandings, "Updating standings (GuildRosterUpdate)")
 mod.BaseGPChanged = EPGP.Profile(
   BuildStandings, "Updating standings (BaseGPChanged)")
 
@@ -77,12 +77,12 @@ local comparator = {
 }
 
 function mod:OnModuleEnable()
-  self:RegisterEvent("GUILD_ROSTER_UPDATE")
-  EPGP:GetModule("guild_info").RegisterMessage(
-    self, "BaseGPChanged", "GUILD_ROSTER_UPDATE")
+  EPGP:GetModule("guild_notes").RegisterMessage(self, "GuildRosterUpdate")
+  EPGP:GetModule("guild_info").RegisterMessage(self, "BaseGPChanged")
 end
 
 function mod:OnModuleDisable()
+  EPGP:GetModule("guild_notes").UnregisterAllMessages(self)
   EPGP:GetModule("guild_info").UnregisterAllMessages(self)
 end
 
