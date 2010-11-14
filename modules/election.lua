@@ -3,6 +3,9 @@ local mod = EPGP:NewModule("election",
 
 local Debug = LibStub("LibDebug-1.0")
 
+local PERIOD = 30
+local TIMEOUT = 10
+
 local master = nil
 local timeout_handle = nil
 
@@ -23,11 +26,11 @@ function mod:DoElection()
   if not CanEditOfficerNote() then return end
 
   self:SendCommMessage(EPGP.MASTER_ELECTION, "", GUILD, nil, "ALERT")
-  self.timeout_handle = self:ScheduleTimer(
+  timeout_handle = self:ScheduleTimer(
     function()
       self:SendCommMessage(EPGP.MASTER_VICTORY, "", GUILD, nil, "ALERT")
     end,
-    15)
+    TIMEOUT)
   Debug("Election started")
 end
 
@@ -70,8 +73,7 @@ function mod:OnModuleEnable()
   self:RegisterComm(EPGP.MASTER_ELECTION, "ProcessMasterElection")
   self:RegisterComm(EPGP.MASTER_VICTORY, "ProcessMasterVictory")
 
-  self:ScheduleRepeatingTimer("DoElection", 30)
-  self:DoElection()
+  self:ScheduleRepeatingTimer("DoElection", PERIOD)
 end
 
 -- TODO(alkis): Test properly with multiple clients.
