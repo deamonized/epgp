@@ -96,7 +96,7 @@ local function NewMemberInfo(new_name)
 
     note = nil
     if new_seq > seq then
-      ep = new_gp
+      ep = new_ep
       raw_gp = new_raw_gp
       seq = new_seq
     elseif seq > new_seq then
