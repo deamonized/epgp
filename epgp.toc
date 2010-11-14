@@ -39,7 +39,6 @@ LibLootNotify-1.0.lua
 localization\localization.xml
 
 core.lua
-standings.lua
 epgp_recurring.lua
 
 modules\announce.lua
@@ -55,6 +54,7 @@ modules\loot.lua
 modules\master.lua
 modules\popups.lua
 modules\slave.lua
+modules\standings.lua
 modules\ui.lua
 modules\warnings.lua
 modules\whisper.lua
