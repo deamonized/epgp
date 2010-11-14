@@ -63,3 +63,5 @@ function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:RegisterComm(EPGP.CHANGE_REQUEST, "ProcessChangeRequest")
 end
+
+-- TODO(alkis): Validate change requests.
