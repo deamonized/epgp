@@ -108,3 +108,7 @@ function EPGP:ChangeEPGP(reason, delta_ep, delta_gp, ...)
   mod.db.profile.next_id = mod.db.profile.next_id + 1
   mod:ProcessRequest(#mod.db.profile.req_queue)
 end
+
+function EPGP:CanDecayEPGP()
+  return CanEditOfficerNote()
+end

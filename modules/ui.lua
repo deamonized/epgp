@@ -642,9 +642,9 @@ local function AddGPControls(frame)
   button:SetScript(
     "OnUpdate",
     function(self)
-      if EPGP:CanAddGP(editBox:GetNumber(),
-                       UIDropDownMenu_GetText(dropDown),
-                       EPGPSideFrame.name) then
+      if EPGP:CanChangeEPGP(UIDropDownMenu_GetText(dropDown),
+                            0, editBox:GetNumber(),
+                            EPGPSideFrame.name) then
         self:Enable()
       else
         self:Disable()
@@ -653,9 +653,9 @@ local function AddGPControls(frame)
   button:SetScript(
     "OnClick",
     function(self)
-      EPGP:AddGP(editBox:GetNumber(),
-                 UIDropDownMenu_GetText(gpFrame.dropDown),
-                 EPGPSideFrame.name)
+      EPGP:ChangeEPGP(UIDropDownMenu_GetText(dropDown),
+                      0, editBox:GetNumber(),
+                      EPGPSideFrame.name)
     end)
 
   frame:SetHeight(
@@ -789,8 +789,7 @@ local function AddEPControls(frame, withRecurring)
       reason = otherEditBox:GetText()
     end
     local amount = editBox:GetNumber()
-    -- TODO(alkis): FIX
-    if EPGP:CanIncEPBy(reason, amount) then
+    if EPGP:CanChangeEPGP(reason, amount, 0) then
       self:Enable()
     else
       self:Disable()
@@ -973,8 +972,7 @@ local function CreateEPGPSideFrame(self)
         reason = epFrame.otherEditBox:GetText()
       end
       local amount = epFrame.editBox:GetNumber()
-      -- TODO(alkis): FIX
-      EPGP:IncEPBy(f.name, reason, amount)
+      EPGP:ChangeEPGP(reason, amount, 0, f.name)
     end)
 
   f:SetScript(
@@ -1073,17 +1071,36 @@ local function CreateEPGPFrameStandings()
   cb:SetScript(
     "OnShow",
     function(self)
-      self:SetChecked(EPGP:StandingsShowEveryone())
+      self:SetChecked(EPGP:GetStandingsShowOffline())
     end)
   cb:SetScript(
     "OnClick",
     function(self)
-      EPGP:StandingsShowEveryone(not not self:GetChecked())
+      EPGP:SetStandingsShowOffline(not not self:GetChecked())
     end)
   local t = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-  t:SetText(L["Show everyone"])
+  t:SetText(L["Show offline"])
   t:SetPoint("RIGHT", cb, "LEFT", 0, 2)
-  f:SetWidth(t:GetStringWidth() + 4 * tl:GetWidth() + cb:GetWidth())
+
+  local cb2 = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+  cb2:SetWidth(20)
+  cb2:SetHeight(20)
+  cb2:SetPoint("RIGHT", t, "RIGHT", -8, 0)
+  cb2:SetScript(
+    "OnShow",
+    function(self)
+      self:SetChecked(EPGP:GetStandingsShowRaidOnly())
+    end)
+  cb2:SetScript(
+    "OnClick",
+    function(self)
+      EPGP:SetStandingsShowRaidOnly(not not self:GetChecked())
+    end)
+  local t2 = cb2:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  t2:SetText(L["Show raid only"])
+  t2:SetPoint("RIGHT", cb, "LEFT", 0, 2)
+
+  f:SetWidth(t:GetStringWidth() + 4 * tl:GetWidth() + cb:GetWidth() + cb2:GetWidth())
 
   local function HideWhileNotInRaid(self)
     if UnitInRaid("player") then
@@ -1227,7 +1244,7 @@ local function CreateEPGPFrameStandings()
       mode = "|cFF00FF00"..GUILD.."|r"
     end
     self:SetFormattedText("%s (%s)", mode,
-                          "|cFFFFFFFF"..EPGP:GetNumMembersInAwardList().."|r")
+                          "|cFFFFFFFF"..EPGP:GetNumStandingsMembers().."|r")
   end
   EPGP.RegisterCallback(modeText, "StandingsChanged", "TextUpdate")
 
@@ -1294,11 +1311,11 @@ local function CreateEPGPFrameStandings()
       function(self)
         local info = EPGP:GetMemberInfo(self.name)
         GameTooltip_SetDefaultAnchor(GameTooltip, self)
-        GameTooltip:AddLine(info.rank)
-        if #info.alts > 0 then
+        GameTooltip:AddLine(info.GetRank())
+        if #info.GetAlts() > 0 then
           GameTooltip:AddLine("\n"..L["Alts"])
-          for i=1,#info.alts do
-            GameTooltip:AddLine(info.alts[i], 1, 1, 1)
+          for i=1,#info.GetAlts() do
+            GameTooltip:AddLine(info.GetAlts()[i].GetName(), 1, 1, 1)
           end
         end
         GameTooltip:ClearAllPoints()
@@ -1343,15 +1360,15 @@ local function CreateEPGPFrameStandings()
           row.cells[4]:SetFormattedText("%.4g", pr)
         end
         row.check:Hide()
-        if UnitInRaid("player") and EPGP:StandingsShowEveryone() then
-          if EPGP:IsMemberInAwardList(row.name) then
-            row.check:Show()
-          end
-        elseif EPGP:IsAnyMemberInExtrasList() then
-          if EPGP:IsMemberInAwardList(row.name) then
-            row.check:Show()
-          end
-        end
+        -- if UnitInRaid("player") and EPGP:StandingsShowEveryone() then
+        --   if EPGP:IsMemberInAwardList(row.name) then
+        --     row.check:Show()
+        --   end
+        -- elseif EPGP:IsAnyMemberInExtrasList() then
+        --   if EPGP:IsMemberInAwardList(row.name) then
+        --     row.check:Show()
+        --   end
+        -- end
         row:SetAlpha(ep < minEP and 0.6 or 1)
         row:Show()
       else
@@ -1378,8 +1395,9 @@ local function CreateEPGPFrameStandings()
   end
 
   rowFrame:SetScript("OnUpdate", UpdateStandings)
-  EPGP.RegisterCallback(rowFrame, "StandingsUpdate",
-                        function() rowFrame.needUpdate = true end)
+  EPGP:GetModule("standings").RegisterMessage(
+    rowFrame, "StandingsUpdate",
+    function() rowFrame.needUpdate = true end)
   rowFrame:SetScript("OnShow", UpdateStandings)
   scrollBar:SetScript(
     "OnVerticalScroll",
