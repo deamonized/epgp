@@ -67,7 +67,7 @@ local EP_SEL = "b[3], a[3]"
 local GP_SEL = "b[4], a[4]"
 local PR_SEL = "b[5], a[5]"
 local MIN_EP_SEL =
-  "b[3] < EPGP.db.profile.min_ep, a[3] < EPGP.db.profile.min_ep"
+  "b[3] < EPGP:GetMinEP() and 0 or 1, a[3] < EPGP:GetMinEP() and 0 or 1"
 
 local comparator = {
   NAME = BuildComparator(NAME_SEL),
