@@ -79,3 +79,10 @@ end
 -- TODO(alkis): Test properly with multiple clients.
 -- TODO(alkis): Algorithm might neeed modification to reduce addon traffic spam.
 -- TODO(alkis): Tune timeout and election period.
+
+--------------------------------------------------------------------------------
+-- These functions change the core interface
+
+function EPGP:GetMaster()
+  return master
+end
