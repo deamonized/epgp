@@ -88,18 +88,18 @@ local function NewMemberInfo(new_name)
   function info.SetRawGP(n) raw_gp = math.max(0, n) end
   function info.SetVersion(n) version = n end -- TODO(alkis): Rollover.
   function info.SetNote(new_note)
-    local ep, raw_gp, n = ParseNote(new_note)
-    if not ep or not raw_gp or not n then
+    local new_ep, new_raw_gp, new_version = ParseNote(new_note)
+    if not new_ep or not new_raw_gp or not new_version then
       note = new_note
       return
     end
 
     note = nil
-    if n > version then
-      info.SetEP(ep)
-      info.SetRawGP(raw_gp)
-      info.SetVersion(n)
-    elseif version > n then
+    if new_version > version then
+      ep = new_gp
+      raw_gp = new_raw_gp
+      version = new_version
+    elseif version > new_version then
       return info.GetNote()
     end
   end
