@@ -154,7 +154,7 @@ local function GUILD_ROSTER_UPDATE(self, event, loc)
     local name, _, _, _, _, _, _, note, _, _, _  = GetGuildRosterInfo(i)
     local info = cache[name] or NewMemberInfo(name)
     cache[name] = info
-    -- TODO(alkis): When this update happens on a not-online member,
+    -- TODO(alkis): When this update happens on an offline member,
     -- we get a GUILD_ROSTER_UPDATE that does not contain the
     -- change. This happens until a real GUILD_ROSTER_UPDATE comes 15
     -- seconds later. This means for offline members we take about 15
