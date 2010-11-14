@@ -2,9 +2,8 @@ local mod = EPGP:NewModule("master", "AceComm-3.0")
 
 local Debug = LibStub("LibDebug-1.0")
 local Map = EPGP.Map
+local MapT = EPGP.MapT
 local TableInsert = EPGP.TableInsert
-
-local master
 
 mod.dbDefaults = {
   profile = {
@@ -28,7 +27,7 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
     local info = EPGP:GetMemberInfo(name)
     info.SetEP(ep)
     info.SetRawGP(raw_gp)
-    info.SetVersion(v)
+    info.SetVersion(sn)
   end
   Debug("Adding announce %s (%s) to journal", msg, requestor)
   tinsert(self.db.profile.journal, ann)
@@ -36,14 +35,13 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
 end
 
 function mod:ProcessChangeRequest(prefix, msg, type, sender)
-  Debug("Received changee request %s (%s)", msg, sender)
-  if master ~= UnitName("player") then return end
+  Debug("Received change request %s (%s)", msg, sender)
+  if EPGP:GetMaster() ~= UnitName("player") then return end
 
   local id, reason, delta_ep, delta_gp, rest = msg:match(
     "(%d+),([^,]+),(%d+),(%d+)(.+)")
   id, delta_ep, delta_gp = Map(tonumber, id, delta_ep, delta_gp)
 
-  local req = {sender, id, reason, delta_ep, delta_gp}
   local ann = {sender, id, reason}
   for target in rest:gmatch(",([^,]+)") do
     local info = EPGP:GetMemberInfo(target)
@@ -57,13 +55,11 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   end
   table.insert(self.db.profile.journal, ann)
   self:SendCommMessage(EPGP.CHANGE_ANNOUNCE,
-                       table.concat({Map(tostring, unpack(ann))}, ","),
+                       table.concat(MapT(tostring, ann), ","),
                        "GUILD", nil, "ALERT")
 end
 
 function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:RegisterComm(EPGP.CHANGE_REQUEST, "ProcessChangeRequest")
-  EPGP:GetModule("election").RegisterMessage(
-    self, "MasterChanged", function(_, new_master) master = new_master end)
 end
