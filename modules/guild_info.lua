@@ -18,6 +18,7 @@ local global_config_defs = {
     error = L["Decay Percent should be a number between 0 and 100"],
     default = 0,
     change_message = "DecayPercentChanged",
+    fname = "GetDecayPercent",
   },
   extras_p = {
     pattern = "@EXTRAS_P:(%d+)",
@@ -26,6 +27,7 @@ local global_config_defs = {
     error = L["Extras Percent should be a number between 0 and 100"],
     default = 100,
     change_message = "ExtrasPercentChanged",
+    fname = "GetExtrasPercent",
   },
   min_ep = {
     pattern = "@MIN_EP:(%d+)",
@@ -34,6 +36,7 @@ local global_config_defs = {
     error = L["Min EP should be a positive number"],
     default = 0,
     change_message = "MinEPChanged",
+    fname = "GetMinEP",
   },
   base_gp = {
     pattern = "@BASE_GP:(%d+)",
@@ -42,6 +45,7 @@ local global_config_defs = {
     error = L["Base GP should be a positive number"],
     default = 1,
     change_message = "BaseGPChanged",
+    fname = "GetBaseGP",
   },
 }
 
@@ -81,9 +85,9 @@ function mod:GUILD_ROSTER_UPDATE(event, loc)
     end
   end
   for var, def in pairs(global_config_defs) do
-    local old_value = EPGP.db.profile[var]
+    local old_value = self.db.profile[var]
     self.db.profile[var] = new_config[var] or def.default
-    if old_value ~= EPGP.db.profile[var] then
+    if old_value ~= self.db.profile[var] then
       Debug("%s changed from %s to %s", var, old_value, self.db.profile[var])
       self:SendMessage(def.change_message, self.db.profile[var])
     end
@@ -92,4 +96,11 @@ end
 
 function mod:OnModuleEnable()
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
+end
+
+--------------------------------------------------------------------------------
+-- These functions change the core interface.
+
+for var, def in pairs(global_config_defs) do
+  EPGP[def.fname] = function(self) return mod.db.profile[var] end
 end

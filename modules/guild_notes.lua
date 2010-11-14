@@ -10,9 +10,6 @@ mod.dbDefaults = {
   }
 }
 
-local function BaseGP()
-  return EPGP:GetModule("guild_info").db.profile.base_gp
-end
 local cache = {}
 
 local function ParseNote(note)
@@ -72,7 +69,7 @@ local function NewMemberInfo(new_name)
   end
 
   function info.GetEP() return ep end
-  function info.GetGP() return raw_gp and raw_gp + BaseGP() or nil end
+  function info.GetGP() return raw_gp and raw_gp + EPGP:GetBaseGP() or nil end
   function info.GetRawGP() return raw_gp end
   function info.GetVersion() return version end
   function info.GetNote()
@@ -87,7 +84,7 @@ local function NewMemberInfo(new_name)
   function info.GetMain() return main end
 
   function info.SetEP(n) ep = math.max(0, n) end
-  function info.SetGP(n) info.SetRawGP(n - BaseGP()) end
+  function info.SetGP(n) info.SetRawGP(n - EPGP:GetBaseGP()) end
   function info.SetRawGP(n) raw_gp = math.max(0, n) end
   function info.SetVersion(n) version = n end -- TODO(alkis): Rollover.
   function info.SetNote(new_note)
@@ -199,17 +196,11 @@ local function GUILD_ROSTER_UPDATE_INIT(self, event, loc)
   self.GUILD_ROSTER_UPDATE(self, event, loc)
 end
 
-function mod:BaseGPChanged(new_base_gp)
-  base_gp = new_base_gp
-end
-
 function mod:OnModuleEnable()
   -- This module enables in multiple steps:
   -- 1) First pass of guild roster is done to find all toons.
   -- 2) Second pass of guild roster is done to parse notes and associate alts.
   -- 3...) All other passes update this state accordingly.
-  EPGP:GetModule("guild_info").RegisterMessage(self, "BaseGPChanged")
-
   self.GUILD_ROSTER_UPDATE = EPGP.Profile(GUILD_ROSTER_UPDATE_INIT,
                                           "Creating member infos")
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
@@ -221,7 +212,6 @@ function mod:OnModuleEnable()
 end
 
 function mod:OnModuleDisable()
-  base_gp = nil
   cache = {}
   self.GUILD_ROSTER_UPDATE = nil
   EPGP:GetModule("guild_info").UnregisterAllMessages(self)
