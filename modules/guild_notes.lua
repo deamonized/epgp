@@ -40,7 +40,7 @@ local function NewMemberInfo(new_name)
   local note
   local ep
   local raw_gp
-  local version = -1
+  local seq = -1
   local name = new_name
   local rank
   local rank_i
@@ -71,10 +71,10 @@ local function NewMemberInfo(new_name)
   function info.GetEP() return ep end
   function info.GetGP() return raw_gp and raw_gp + EPGP:GetBaseGP() or nil end
   function info.GetRawGP() return raw_gp end
-  function info.GetVersion() return version end
+  function info.GetSeq() return seq end
   function info.GetNote()
     if note then return note end
-    return EncodeNote(ep, raw_gp, version)
+    return EncodeNote(ep, raw_gp, seq)
   end
   function info.GetName() return name end
   function info.GetRank() return rank end
@@ -86,27 +86,27 @@ local function NewMemberInfo(new_name)
   function info.SetEP(n) ep = math.max(0, n) end
   function info.SetGP(n) info.SetRawGP(n - EPGP:GetBaseGP()) end
   function info.SetRawGP(n) raw_gp = math.max(0, n) end
-  function info.SetVersion(n) version = n end -- TODO(alkis): Rollover.
+  function info.SetSeq(n) seq = n end -- TODO(alkis): Rollover.
   function info.SetNote(new_note)
-    local new_ep, new_raw_gp, new_version = ParseNote(new_note)
-    if not new_ep or not new_raw_gp or not new_version then
+    local new_ep, new_raw_gp, new_seq = ParseNote(new_note)
+    if not new_ep or not new_raw_gp or not new_seq then
       note = new_note
       return
     end
 
     note = nil
-    if new_version > version then
+    if new_seq > seq then
       ep = new_gp
       raw_gp = new_raw_gp
-      version = new_version
-    elseif version > new_version then
+      seq = new_seq
+    elseif seq > new_seq then
       return info.GetNote()
     end
   end
 
   local specials = {
-    "GetEP", "GetGP", "GetRawGP", "GetVersion",
-    "SetEP", "SetGP", "SetRawGP", "SetVersion",
+    "GetEP", "GetGP", "GetRawGP", "GetSeq",
+    "SetEP", "SetGP", "SetRawGP", "SetSeq",
   }
   -- Make _FunName copies of specials for use when moving methods around.
   for i,fn in ipairs(specials) do

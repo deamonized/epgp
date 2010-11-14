@@ -22,12 +22,12 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   id = tonumber(id)
   local ann = {requestor, id, reason}
   for name, sn, ep, raw_gp in rest:gmatch("([^,]+),(%d+),(%d+),(%d+)") do
-    sn, ep, raw_gp = Map(tonumber, sn, ep, raw_gp)
-    TableInsert(ann, name, sn, ep, raw_gp)
+    seq, ep, raw_gp = Map(tonumber, sn, ep, raw_gp)
+    TableInsert(ann, name, seq, ep, raw_gp)
     local info = EPGP:GetMemberInfo(name)
     info.SetEP(ep)
     info.SetRawGP(raw_gp)
-    info.SetVersion(sn)
+    info.SetSeq(seq)
   end
   Debug("Adding announce %s (%s) to journal", msg, requestor)
   tinsert(self.db.profile.journal, ann)
@@ -47,11 +47,11 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
     local info = EPGP:GetMemberInfo(target)
     local ep = info.GetEP() + delta_ep
     local raw_gp = info.GetRawGP() + delta_gp
-    local v = info.GetVersion() + 1
+    local seq = info.GetSeq() + 1
     TableInsert(ann, target, ep, raw_gp, v)
     info.SetEP(ep)
     info.SetRawGP(raw_gp)
-    info.SetVersion(v)
+    info.SetSeq(seq)
   end
   table.insert(self.db.profile.journal, ann)
   self:SendCommMessage(EPGP.CHANGE_ANNOUNCE,
