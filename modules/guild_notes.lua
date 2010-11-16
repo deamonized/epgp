@@ -1,4 +1,5 @@
-local mod = EPGP:NewModule("guild_notes", "AceEvent-3.0", "AceTimer-3.0")
+local mod = EPGP:NewModule("guild_notes",
+                           "AceEvent-3.0", "AceHook-3.0", "AceTimer-3.0")
 
 local Debug = LibStub("LibDebug-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
@@ -225,6 +226,36 @@ function mod:OnModuleEnable()
     local info = NewMemberInfo(name)
     info.SetNote(note)
   end
+
+  -- We need to "show" offline members because when we change offline
+  -- members' notes and GetGuildRosterShowOffline() returns nil a
+  -- GUILD_ROSTER_UPDATE is fired but the data we just wrote is not
+  -- reflected in the notes. As such we need to enable show offline
+  -- while the guild roster is not shown and restore it's original
+  -- value when it is.
+  self:RawHook(
+    "GuildFrame_LoadUI",
+    function(...)
+      SetGuildRosterShowOffline(self.db.profile.blizzard_show_offline)
+      self.hooks.GuildFrame_LoadUI(...)
+      self:RawHookScript(
+        GuildRosterFrame, "OnShow",
+        function(frame, ...)
+          SetGuildRosterShowOffline(self.db.profile.blizzard_show_offline)
+          self.hooks[frame].OnShow(frame, ...)
+        end)
+      self:RawHookScript(
+        GuildRosterFrame, "OnHide",
+        function(frame, ...)
+          self.db.profile.blizzard_show_offline = GetGuildRosterShowOffline()
+          self.hooks[frame].OnHide(frame, ...)
+          SetGuildRosterShowOffline(true)
+        end)
+      self:Unhook("GuildFrame_LoadUI")
+
+      SetGuildRosterShowOffline(true)
+    end, true)
+  SetGuildRosterShowOffline(true)
 end
 
 function mod:OnModuleDisable()
