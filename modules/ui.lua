@@ -1067,52 +1067,35 @@ local function CreateEPGPFrameStandings()
   local cb = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   cb:SetWidth(20)
   cb:SetHeight(20)
-  cb:SetPoint("RIGHT", f, "RIGHT", -8, 0)
+  cb:SetPoint("RIGHT", f, "RIGHT", -8, 2)
   cb:SetScript(
     "OnShow",
-    function(self)
-      self:SetChecked(EPGP:GetStandingsShowOffline())
-    end)
+    function(self) self:SetChecked(EPGP:GetStandingsShowOffline()) end)
   cb:SetScript(
     "OnClick",
-    function(self)
-      EPGP:SetStandingsShowOffline(not not self:GetChecked())
-    end)
-  local t = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-  t:SetText(L["Show offline"])
-  t:SetPoint("RIGHT", cb, "LEFT", 0, 2)
+    function(self) EPGP:SetStandingsShowOffline(not not self:GetChecked()) end)
+
+  local t1 = cb:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  t1:SetText(L["Show offline"])
+  t1:SetPoint("RIGHT", cb, "LEFT")
 
   local cb2 = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   cb2:SetWidth(20)
   cb2:SetHeight(20)
-  cb2:SetPoint("RIGHT", t, "RIGHT", -8, 0)
+  cb2:SetPoint("RIGHT", t1, "LEFT", -8, 0)
   cb2:SetScript(
     "OnShow",
-    function(self)
-      self:SetChecked(EPGP:GetStandingsShowRaidOnly())
-    end)
+    function(self) self:SetChecked(EPGP:GetStandingsShowRaidOnly()) end)
   cb2:SetScript(
     "OnClick",
-    function(self)
-      EPGP:SetStandingsShowRaidOnly(not not self:GetChecked())
-    end)
+    function(self) EPGP:SetStandingsShowRaidOnly(not not self:GetChecked()) end)
+
   local t2 = cb2:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
   t2:SetText(L["Show raid only"])
-  t2:SetPoint("RIGHT", cb, "LEFT", 0, 2)
+  t2:SetPoint("RIGHT", cb2, "LEFT")
 
-  f:SetWidth(t:GetStringWidth() + 4 * tl:GetWidth() + cb:GetWidth() + cb2:GetWidth())
-
-  local function HideWhileNotInRaid(self)
-    if UnitInRaid("player") then
-      self:Show()
-    else
-      self:Hide()
-    end
-  end
-
-  f:RegisterEvent("RAID_ROSTER_UPDATE")
-  f:SetScript("OnEvent", HideWhileNotInRaid)
-  f:SetScript("OnShow", HideWhileNotInRaid)
+  f:SetWidth(t1:GetStringWidth() + t2:GetStringWidth() +
+             4 * tl:GetWidth() + cb:GetWidth() + cb2:GetWidth())
 
   -- Make the log frame
   CreateEPGPLogFrame()
