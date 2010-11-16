@@ -22,7 +22,6 @@ function mod:ShouldShow(i)
   if self.db.profile.show_raid_only and UnitInRaid("player") and not UnitInRaid(name) then return false end
   local info = EPGP:GetMemberInfo(name)
   if info and info.GetEP() then return true end
-  print(name)
 end
 
 local function BuildStandings(self)
