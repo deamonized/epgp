@@ -113,20 +113,20 @@ local function NewMemberInfo(new_name)
   end
 
   local specials = {
-    "GetEP", "GetGP", "GetRawGP", "GetSeq", "SetEPGP"
+    GetEP=info.GetEP,
+    GetGP=info.GetGP,
+    GetRawGP=info.GetRawGP,
+    GetSeq=info.GetSeq,
+    SetEPGP=info.SetEPGP,
   }
-  -- Make _FunName copies of specials for use when moving methods around.
-  for i,fn in ipairs(specials) do
-    rawset(info, "_"..fn, rawget(info, fn))
-  end
 
   function info.SetMain(m)
     Debug("Setting %s as main for %s", m.GetName(), name)
     main = m
     table.insert(main.GetAlts(), info)
     -- Delete all specials so that they are forwarded to main.
-    for i, fn in ipairs(specials) do
-      rawset(info, fn, nil)
+    for n,fn in ipairs(specials) do
+      rawset(info, n, nil)
     end
   end
 
@@ -139,8 +139,8 @@ local function NewMemberInfo(new_name)
       end
     end
     -- Copy specials back.
-    for i, fn in ipairs(specials) do
-      rawset(info, fn, rawget(info, "_"..fn))
+    for n,fn in ipairs(specials) do
+      rawset(info, n, fn)
     end
     main = nil
   end
