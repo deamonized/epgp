@@ -1229,7 +1229,8 @@ local function CreateEPGPFrameStandings()
     self:SetFormattedText("%s (%s)", mode,
                           "|cFFFFFFFF"..EPGP:GetNumStandingsMembers().."|r")
   end
-  EPGP.RegisterCallback(modeText, "StandingsChanged", "TextUpdate")
+  EPGP:GetModule("standings").RegisterMessage(
+    modeText, "StandingsChanged", "TextUpdate")
 
   -- Make the table frame
   local tabl = CreateFrame("Frame", nil, main)
