@@ -21,6 +21,7 @@ def main():
   base_dir = util.FindAddonRootDir('epgp')
   logging.info('Extracting localization strings from files')
   for file in chain(iglob(os.path.join(base_dir, '*.lua')),
+                    iglob(os.path.join(base_dir, 'modules', '*.lua')),
                     iglob(os.path.join(base_dir, '*.xml'))):
     text = open(file).read()
     localized_strings = _LOCALIZED_STRING_RE.findall(text)
