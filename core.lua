@@ -23,6 +23,8 @@ EPGP.MASTER_VICTORY = "EPGP_MaVic"
 EPGP.CHANGE_ANNOUNCE = "EPGP_ChAnn"
 -- ID,REASON,DELTA_EP,DELTA_GP(,NAME)+
 EPGP.CHANGE_REQUEST = "EPGP_ChReq"
+-- ID
+EPGP.DECAY_REQUEST = "EPGP_DeReq"
 
 -- The module prototype.
 
@@ -216,7 +218,7 @@ function EPGP:OnEnable()
   -- Display any notes if this is a new version.
   if self.db.global.last_version ~= self.version then
     self.db.global.last_version = self.version
-    StaticPopup_Show("EPGP_NEW_VERSION")
+    StaticPopup_Show("EPGP_NEW_VERSION", self.version)
   end
 
   -- Set enabled state on all modules otherwise they won't be enabled
