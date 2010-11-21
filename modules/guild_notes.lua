@@ -32,7 +32,10 @@ end
 
 -- The metatable for the infos. It forwards methods that do not exist
 -- to the main toon's info.
-local mt = {__index=function(t, k) return t.GetMain()[k] end}
+local mt = {__index=function(t, k)
+                      local main = t.GetMain()
+                      return t and t[k] or nil
+                    end}
 local function NewMemberInfo(new_name)
   local info = {}
 
@@ -85,6 +88,14 @@ local function NewMemberInfo(new_name)
   function info.GetClass() return class end
   function info.GetAlts() return alts end
   function info.GetMain() return main end
+  -- Used for decay.
+  function info.GetEPScaledBy(f)
+    return math.max(0, math.floor(info.GetEP() * f))
+  end
+  function info.GetRawGPForGPScaledBy(f)
+    local base_gp = EPGP:GetBaseGP()
+    return math.max(base_gp, math.floor(info.GetGP() * f)) - base_gp
+  end
 
   function info.SetEPGP(e, g, s)
     if s > seq then

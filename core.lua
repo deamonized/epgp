@@ -371,3 +371,9 @@ function EPGP.ParseChangeRequest(msg)
   end
   return req
 end
+
+function EPGP.ParseDecayRequest(msg)
+  local id = msg:match("(%d+)")
+  id = tonumber(id)
+  return {id}
+end

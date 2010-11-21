@@ -56,9 +56,45 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
                        "GUILD", nil, "ALERT")
 end
 
+function mod:ProcessDecayRequest(prefix, msg, type, sender)
+  Debug("Received decay request %s (%s)", msg, sender)
+  if EPGP:GetMaster() ~= UnitName("player") then return end
+
+  local req = EPGP.ParseDecayRequest(msg)
+
+  -- Build the announcement.
+  local id = unpack(req)
+  local reason = ("Decay (%d%%)"):format(EPGP:GetDecayPercent())
+
+  local ann = {sender, id, reason}
+  local totalMembers = GetNumGuildMembers()
+  local decay_factor = 1 - 0.01 * EPGP:GetDecayPercent()
+
+  for i=1,totalMembers do
+    local name = GetGuildRosterInfo(i)
+    local info = EPGP:GetMemberInfo(name)
+
+    -- Only decay mains.
+    if not info.GetMain() then
+      local ep = info.GetEPScaledBy(decay_factor)
+      local raw_gp = info.GetRawGPForGPScaledBy(decay_factor)
+      local seq = info.GetSeq() + 1
+      if ep ~= info.GetEP() or raw_gp ~= info.GetRawGP() then
+        TableInsert(ann, name, ep, raw_gp, seq)
+      end
+    end
+    ApplyAnnounce(ann)
+    table.insert(self.db.profile.journal, ann)
+  end
+  self:SendCommMessage(EPGP.CHANGE_ANNOUNCE,
+                       table.concat(MapT(tostring, ann), ","),
+                       "GUILD", nil, "ALERT")
+end
+
 function mod:OnModuleEnable()
   self:RegisterComm(EPGP.CHANGE_ANNOUNCE, "ProcessChangeAnnounce")
   self:RegisterComm(EPGP.CHANGE_REQUEST, "ProcessChangeRequest")
+  self:RegisterComm(EPGP.DECAY_REQUEST, "ProcessDecayRequest")
 end
 
 -- TODO(alkis): Validate change requests.
