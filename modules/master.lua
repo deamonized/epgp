@@ -37,20 +37,32 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   if EPGP:GetMaster() ~= UnitName("player") then return end
 
   local req = EPGP.ParseChangeRequest(msg)
-
-  -- Build the announcement.
   local id, reason, delta_ep, delta_gp = unpack(req)
-  local ann = {sender, id, reason}
-  for i=5,#req do
-    local name = req[i]
-    local info = EPGP:GetMemberInfo(name)
-    local ep = info.GetEP() + delta_ep
-    local raw_gp = info.GetRawGP() + delta_gp
-    local seq = info.GetSeq() + 1
-    TableInsert(ann, name, ep, raw_gp, seq)
+
+  local ann
+
+  -- Attempt to find an announcement for this request in our journal.
+  for i,a in ipairs(mod.db.profile.journal) do
+    if sender == a[1] and id == a[2] then
+      ann = a
+      break
+    end
   end
-  ApplyAnnounce(ann)
-  table.insert(self.db.profile.journal, ann)
+
+  -- We haven't processed this request before. Process it now.
+  if not ann then
+    ann = {sender, id, reason}
+    for i=5,#req do
+      local name = req[i]
+      local info = EPGP:GetMemberInfo(name)
+      local ep = info.GetEP() + delta_ep
+      local raw_gp = info.GetRawGP() + delta_gp
+      local seq = info.GetSeq() + 1
+      TableInsert(ann, name, ep, raw_gp, seq)
+    end
+    ApplyAnnounce(ann)
+    table.insert(self.db.profile.journal, ann)
+  end
   self:SendCommMessage(EPGP.CHANGE_ANNOUNCE,
                        table.concat(MapT(tostring, ann), ","),
                        "GUILD", nil, "ALERT")
