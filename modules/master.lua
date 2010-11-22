@@ -19,12 +19,23 @@ local function ApplyAnnounce(ann)
   end
 end
 
+local function FindAnnounce(sender, id)
+  for i,a in ipairs(mod.db.profile.journal) do
+    if sender == a[1] and id == a[2] then
+      return a
+    end
+  end
+end
+
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   local ann = EPGP.ParseChangeAnnounce(msg)
   Debug("Received change announce %s (%s)", msg, ann[1])
 
   -- If we are the sender everything is done already.
   if sender == UnitName("player") then return end
+
+  -- If we have the announce we can also return safely.
+  if FindAnnounce(ann[1], ann[2]) then return end
 
   ApplyAnnounce(ann)
   Debug("Adding announce %s (%s) to journal", msg, sender)
@@ -39,16 +50,7 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   local req = EPGP.ParseChangeRequest(msg)
   local id, reason, delta_ep, delta_gp = unpack(req)
 
-  local ann
-
-  -- Attempt to find an announcement for this request in our journal.
-  for i,a in ipairs(mod.db.profile.journal) do
-    if sender == a[1] and id == a[2] then
-      ann = a
-      break
-    end
-  end
-
+  local ann = FindAnnounce(sender, id)
   -- We haven't processed this request before. Process it now.
   if not ann then
     ann = {sender, id, reason}
