@@ -92,6 +92,7 @@ local function NewMemberInfo(new_name)
   function info.GetEPScaledBy(f)
     return math.max(0, math.floor(info.GetEP() * f))
   end
+  -- Used for decay.
   function info.GetRawGPForGPScaledBy(f)
     local base_gp = EPGP:GetBaseGP()
     return math.max(base_gp, math.floor(info.GetGP() * f)) - base_gp
