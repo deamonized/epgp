@@ -3,15 +3,31 @@ local mod = EPGP:NewModule("gptooltip", "AceHook-3.0")
 local GP = LibStub("LibGearPoints-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 
+local SLOT_LABELS = {
+  INVTYPE_RANGED = { LOCALIZED_CLASS_NAMES_MALE["HUNTER"], OTHER },
+  INVTYPE_SHIELD = { TANK, OTHER },
+  INVTYPE_2HWEAPON = { OTHER, LOCALIZED_CLASS_NAMES_MALE["HUNTER"] },
+  INVTYPE_RANGEDRIGHT = { LOCALIZED_CLASS_NAMES_MALE["HUNTER"], OTHER },
+  INVTYPE_WEAPON = { DAMAGER, TANK },
+}
+
 function OnTooltipSetItem(tooltip, ...)
   local _, itemlink = tooltip:GetItem()
   local gp1, gp2, ilvl = GP:GetValue(itemlink)
+  local _, _, _, _, _, _, _, _, equip_loc = GetItemInfo(itemlink)
+  local labels = SLOT_LABELS[equip_loc]
 
   if gp1 then
     if gp2 then
-      tooltip:AddLine(
-        L["GP: %d or %d"]:format(gp1, gp2),
-        NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+      if #labels == 2 then
+	tooltip:AddLine(
+	  L["GP: %d (%s) or %d (%s)"]:format(gp1, labels[1], gp2, labels[2]),
+	  NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+      else
+	tooltip:AddLine(
+	  L["GP: %d or %d"]:format(gp1, gp2),
+	  NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+      end
     else
       tooltip:AddLine(
         L["GP: %d"]:format(gp1),

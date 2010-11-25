@@ -52,6 +52,7 @@ L["Extras Percent should be a number between 0 and 100"] = true
 L["GP Reason"] = true
 L["GP on tooltips"] = true
 L["GP: %d or %d"] = true
+L["GP: %d (%s) or %d (%s)"] = true
 L["GP: %d"] = true
 L["Guild or Raid are awarded EP"] = true
 L["Hint: You can open these options by typing /epgp config"] = true
