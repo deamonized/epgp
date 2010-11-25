@@ -15,19 +15,25 @@ mod.dbDefaults = {
 
 local Map = EPGP.Map
 
+local function FindRequest(sender, id)
+  for i,r in ipairs(mod.db.profile.req_queue) do
+    if sender == r[2] and id == r[3] then
+      return i, r
+    end
+  end
+end
+
 function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   local ann = EPGP.ParseChangeAnnounce(msg)
   Debug("Received change announce %s (%s)", msg, ann[1])
 
   -- Find the request that was announced, call callbacks with info
   -- from request and then remove it.
-  for i,r in ipairs(self.db.profile.req_queue) do
-    if r[2] == ann[1] and r[3] == ann[2] then
-      self:SendMessage("ChangeAnnounced", unpack(r))
-      Debug("Removing request %s:%d from our queue", r[2], r[3])
-      tremove(self.db.profile.req_queue, i)
-      break
-    end
+  local idx, req = FindRequest(ann[1], ann[2])
+  if req then
+    self:SendMessage("ChangeAnnounced", unpack(req))
+    Debug("Removing request %s:%d from our queue", ann[1], ann[2])
+    tremove(self.db.profile.req_queue, idx)
   end
 end
 
@@ -38,8 +44,10 @@ function mod:ProcessChangeRequest(prefix, msg, type, sender)
   if sender == UnitName("player") then return end
 
   local req = EPGP.ParseChangeRequest(msg)
-  table.insert(self.db.profile.req_queue,
-               {EPGP.CHANGE_REQUEST, sender, unpack(req)})
+  if not FindRequest(sender, req[1]) then
+    table.insert(self.db.profile.req_queue,
+                 {EPGP.CHANGE_REQUEST, sender, unpack(req)})
+  end
 end
 
 function mod:ProcessDecayRequest(prefix, msg, type, sender)
@@ -48,8 +56,11 @@ function mod:ProcessDecayRequest(prefix, msg, type, sender)
   -- If we are the sender we have this request in our queue already.
   if sender == UnitName("player") then return end
 
-  table.insert(self.db.profile.req_queue,
-               {EPGP.DECAY_REQUEST, sender})
+  local req = EPGP.ParseDecayRequest(msg)
+  if not FindRequest(sender, req[1]) then
+    table.insert(self.db.profile.req_queue,
+                 {EPGP.DECAY_REQUEST, sender})
+  end
 end
 
 function mod:ProcessRequest(i)
