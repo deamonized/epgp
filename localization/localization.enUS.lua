@@ -3,6 +3,7 @@ if not L then return end
 
 L["%+d EP (%s) to %s"] = true
 L["%+d GP (%s) to %s"] = true
+L["%s: %s decayed"] = true
 L["%d or %d"] = true
 L["%s is added to the award list"] = true
 L["%s is already in the award list"] = true
@@ -12,6 +13,9 @@ L["%s is now removed from the award list"] = true
 L["%s to %s"] = true
 L["%s: %+d EP (%s) to %s"] = true
 L["%s: %+d GP (%s) to %s"] = true
+L["%s: %+d EP by %s (%s) to %s"] = true
+L["%s: %+d GP by %s (%s) to %s"] = true
+L["%s: %d EP, %d GP by %s (%s) to: %s"] = true
 L["%s: %s to %s"] = true
 L["A member is awarded EP"] = true
 L["A member is credited GP"] = true

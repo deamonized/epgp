@@ -20,6 +20,7 @@ local mod = EPGP:NewModule("log", "AceComm-3.0")
 local L = LibStub:GetLibrary("AceLocale-3.0"):GetLocale("EPGP")
 local JSON = LibStub("LibJSON-1.0")
 local deformat = LibStub("LibDeformat-3.0")
+local Debug = LibStub("LibDebug-1.0")
 
 local CallbackHandler = LibStub("CallbackHandler-1.0")
 if not mod.callbacks then
@@ -46,45 +47,53 @@ end
 
 local LOG_FORMAT = "LOG:%d\31%s\31%s\31%s\31%d"
 
-local function AppendToLog(kind, event_type, name, reason, amount, mass, undo)
-  if not undo then
-    -- Clear the redo table
-    for k,_ in ipairs(mod.db.profile.redo) do
-      mod.db.profile.redo[k] = nil
-    end
-    local entry = {GetTimestamp(), kind, name, reason, amount}
-    table.insert(mod.db.profile.log, entry)
-    mod:SendCommMessage("EPGP", string.format(LOG_FORMAT, unpack(entry)),
-                        "GUILD", nil, "BULK")
-    callbacks:Fire("LogChanged", #mod.db.profile.log)
+local function AppendToLog(kind, ...)
+  -- Clear the redo table
+  for k,_ in ipairs(mod.db.profile.redo) do
+    mod.db.profile.redo[k] = nil
   end
+  local entry = {GetTimestamp(), ...}
+  table.insert(mod.db.profile.log, entry)
+  callbacks:Fire("LogChanged", #mod.db.profile.log)
 end
 
-function mod:LogSync(prefix, msg, distribution, sender)
-  if prefix == "EPGP" and sender ~= UnitName("player") then
-    local timestamp, kind, name, reason, amount = deformat(msg, LOG_FORMAT)
-    if timestamp then
-      local entry = {tonumber(timestamp), kind, name, reason, tonumber(amount)}
-      table.insert(mod.db.profile.log, entry)
-      callbacks:Fire("LogChanged", #self.db.profile.log)
+local function LogRecordToString(timestamp, kind, ...)
+  local nice_timestamp = date("%Y-%m-%d %H:%M", timestamp)
+
+  if kind == EPGP.DECAY_REQUEST then
+    local changer = ...
+    return string.format(L["%s: %s decayed"], nice_timestamp, changer)
+  elseif kind == EPGP.CHANGE_REQUEST then
+    local changer, _, reason, delta_ep, delta_gp = ...
+    local victim_string = strjoin(", ", select(6, ...))
+    if delta_ep == 0 and delta_gp ~= 0 then
+      return string.format(L["%s: %+d GP by %s (%s) to %s"],
+                           nice_timestamp, delta_gp, changer,
+			   reason, victim_string)
+    elseif delta_ep ~= 0 and delta_gp == 0 then
+      return string.format(L["%s: %+d EP by %s (%s) to %s"],
+                           nice_timestamp, delta_ep, changer,
+			   reason, victim_string)
+    else
+      return string.format(L["%s: %d EP, %d GP by %s (%s) to: %s"],
+                           nice_timestamp, delta_ep, delta_gp, changer,
+			   reason, victim_string)
     end
-  end
-end
-
-local function LogRecordToString(record)
-  local timestamp, kind, name, reason, amount = unpack(record)
-
-  if kind == "EP" then
-    return string.format(L["%s: %+d EP (%s) to %s"],
-                         date("%Y-%m-%d %H:%M", timestamp), amount, reason, name)
-  elseif kind == "GP" then
-    return string.format(L["%s: %+d GP (%s) to %s"],
-                         date("%Y-%m-%d %H:%M", timestamp), amount, reason, name)
-  elseif kind == "BI" then
-    return string.format(L["%s: %s to %s"],
-                         date("%Y-%m-%d %H:%M", timestamp), reason, name)
   else
-    assert(false, "Unknown record in the log")
+    -- These are wotlk-structured entries
+    local name, reason, amount = ...
+    if kind == "EP" then
+      return string.format(L["%s: %+d EP (%s) to %s"],
+                           nice_timestamp, amount, reason, name)
+    elseif kind == "GP" then
+      return string.format(L["%s: %+d GP (%s) to %s"],
+                           nice_timestamp, amount, reason, name)
+    elseif kind == "BI" then
+      return string.format(L["%s: %s to %s"],
+                           nice_timestamp, reason, name)
+    else
+      return "(corrupt/malformed log entry)"
+    end
   end
 end
 
@@ -96,7 +105,7 @@ function mod:GetLogRecord(i)
   local logsize = #self.db.profile.log
   assert(i >= 0 and i < #self.db.profile.log, "Index "..i.." is out of bounds")
 
-  return LogRecordToString(self.db.profile.log[logsize - i])
+  return LogRecordToString(unpack(self.db.profile.log[logsize - i]))
 end
 
 function mod:CanUndo()
@@ -108,6 +117,7 @@ end
 
 function mod:UndoLastAction()
   assert(#self.db.profile.log ~= 0)
+  assert(false, "this doesn't work yet")
 
   local record = table.remove(self.db.profile.log)
   table.insert(self.db.profile.redo, record)
@@ -140,6 +150,7 @@ end
 
 function mod:RedoLastUndo()
   assert(#self.db.profile.redo ~= 0)
+  assert(false, "this doesn't work yet")
 
   local record = table.remove(self.db.profile.redo)
   local timestamp, kind, name, reason, amount = unpack(record)
@@ -324,11 +335,7 @@ mod.dbDefaults = {
 }
 
 function mod:OnModuleEnable()
-  EPGP.RegisterCallback(mod, "EPAward", AppendToLog, "EP")
-  EPGP.RegisterCallback(mod, "GPAward", AppendToLog, "GP")
-  EPGP.RegisterCallback(mod, "BankedItem", AppendToLog, "BI")
-  mod:RegisterComm("EPGP", "LogSync")
-
+  EPGP:GetModule("slave"):RegisterMessage("ChangeAnnounced", AppendToLog)
   -- Upgrade the logs from older dbs
   if EPGP.db.profile.log then
     self.db.profile.log = EPGP.db.profile.log
