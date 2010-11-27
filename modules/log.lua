@@ -217,6 +217,22 @@ function mod:TrimToOneMonth()
   callbacks:Fire("LogChanged", #self.db.profile.log)
 end
 
+function mod:ExportRoster()
+  local base_gp = EPGP:GetBaseGP()
+  local t = {}
+  local totalMembers = GetNumGuildMembers()
+  for i=1,totalMembers do
+    local name = GetGuildRosterInfo(i)
+    local info = EPGP:GetMemberInfo(name)
+
+    local ep, gp, main = info.GetEP(), info.GetGP(), info.GetMain()
+    if ep ~= 0 or gp ~= base_gp then
+      table.insert(t, {name, ep, gp})
+    end
+  end
+  return t
+end
+
 function mod:Export()
   local d = {}
   d.region = GetCVar("portal")
@@ -228,15 +244,23 @@ function mod:Export()
   d.extras_p = EPGP:GetExtrasPercent()
   d.timestamp = GetTimestamp()
 
-  d.roster = EPGP:ExportRoster()
+  d.roster = mod:ExportRoster()
 
   d.loot = {}
-  for i, record in ipairs(self.db.profile.log) do
-    local timestamp, kind, name, reason, amount = unpack(record)
-    if kind == "GP" or kind == "BI" then
+  for i=1, #self.db.profile.log do
+    local record = self.db.profile.log[i]
+    local changer, _, reason, delta_ep, delta_gp = unpack(record)
+    local victim_string = strjoin(", ", select(6, unpack(record)))
+    local timestamp, kind, changer, change_id, reason, delta_ep, delta_gp = unpack(record)
+    if kind == EPGP.CHANGE_REQUEST and delta_gp ~= 0 then
       local id = tonumber(reason:match("item:(%d+)"))
       if id then
-        table.insert(d.loot, {timestamp, name, id, amount})
+	-- GP should only be awarded to one person per record entry,
+	-- but it's possible for there to be multiple.
+	local victims = {unpack(record, 8)}
+	for victim=1,#victims do
+	  table.insert(d.loot, {timestamp, victims[victim], id, delta_gp})
+	end
       end
     end
   end
