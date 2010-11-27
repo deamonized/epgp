@@ -17,6 +17,8 @@ local function ApplyAnnounce(ann)
     local info = EPGP:GetMemberInfo(name)
     info.SetEPGP(ep, raw_gp, seq)
   end
+  EPGP:ScheduleTimer(
+    function() EPGP:SendMessage("GuildRosterUpdate") end, 0)
 end
 
 local function FindAnnounce(sender, id)
