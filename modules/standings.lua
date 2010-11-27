@@ -15,9 +15,8 @@ mod.dbDefaults = {
 local standings
 
 function mod:ShouldShow(i)
-  local  name, rank, rankIndex, level, class, zone, note,
-  officernote, online, status, classFileName,
-  achievementPoints, achievementRank, isMobile = GetGuildRosterInfo(i)
+  local name = GetGuildRosterInfo(i)
+  local online = select(8, GetGuildRosterInfo(i))
   if not self.db.profile.show_offline and not online then return false end
   if self.db.profile.show_raid_only and UnitInRaid("player") and not UnitInRaid(name) then return false end
   local info = EPGP:GetMemberInfo(name)
@@ -123,4 +122,30 @@ end
 function EPGP:SetStandingsShowRaidOnly(v)
   mod.db.profile.show_raid_only = v
   BuildStandings(mod)
+end
+
+function EPGP:CanAwardStandings(reason, delta_ep)
+  return self:CanChangeEPGP(reason, delta_ep, 0)
+end
+
+function EPGP:AwardStandings(reason, delta_ep, raid_only, online_only)
+  if raid_only == nil then raid_only = mod.db.profile.show_raid_only end
+  if online_only == nil then online_only = not mod.db.profile.show_offline end
+  local function ShouldAward(i)
+    local name = GetGuildRosterInfo(i)
+    local online = select(8, GetGuildRosterInfo(i))
+    if raid_only and UnitInRaid("player") and not UnitInRaid(name) then return false end
+    if online_only and offline then return false end
+    if self:GetMemberInfo(name).GetMain() then return false end
+    return true
+  end
+  local award_list = {}
+  local totalMembers = GetNumGuildMembers()
+  for i = 1, totalMembers do
+    if ShouldAward(i) then
+      local name = GetGuildRosterInfo(i)
+      table.insert(award_list, name)
+    end
+  end
+  self:ChangeEPGP(reason, delta_ep, 0, unpack(award_list))
 end

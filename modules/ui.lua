@@ -1016,8 +1016,7 @@ local function CreateEPGPSideFrame2()
         reason = epFrame.otherEditBox:GetText()
       end
       local amount = epFrame.editBox:GetNumber()
-      -- TODO(alkis): FIX
-      EPGP:IncMassEPBy(reason, amount)
+      EPGP:AwardStandings(reason, amount)
     end)
 
   epFrame.recurring:SetScript(
