@@ -13,6 +13,7 @@ local SLOT_LABELS = {
 
 function OnTooltipSetItem(tooltip, ...)
   local _, itemlink = tooltip:GetItem()
+  if not itemlink then return end
   local gp1, gp2, ilvl = GP:GetValue(itemlink)
   local _, _, _, _, _, _, _, _, equip_loc = GetItemInfo(itemlink)
   local labels = SLOT_LABELS[equip_loc]
