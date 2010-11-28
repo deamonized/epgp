@@ -28,22 +28,7 @@ if not mod.callbacks then
 end
 local callbacks = mod.callbacks
 
-local timestamp_t = {}
-local function GetTimestamp(diff)
-  timestamp_t.month = select(2, CalendarGetDate())
-  timestamp_t.day = select(3, CalendarGetDate())
-  timestamp_t.year = select(4, CalendarGetDate())
-  timestamp_t.hour = select(1, GetGameTime())
-  timestamp_t.min = select(2, GetGameTime())
-  if diff then
-    timestamp_t.month = timestamp_t.month + (diff.month or 0)
-    timestamp_t.day = timestamp_t.day + (diff.day or 0)
-    timestamp_t.year = timestamp_t.year + (diff.year or 0)
-    timestamp_t.hour = timestamp_t.hour + (diff.hour or 0)
-    timestamp_t.min = timestamp_t.min + (diff.min or 0)
-  end
-  return time(timestamp_t)
-end
+local GetTimestamp = EPGP.GetTimestamp
 
 local LOG_FORMAT = "LOG:%d\31%s\31%s\31%s\31%d"
 

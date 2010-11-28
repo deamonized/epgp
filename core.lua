@@ -377,3 +377,10 @@ function EPGP.ParseDecayRequest(msg)
   id = tonumber(id)
   return {id}
 end
+
+function EPGP.GetTimestamp()
+  local t = {}
+  _, t.month, t.day, t.year = CalendarGetDate()
+  t.hour, t.min = GetGameTime()
+  return time(t)
+end
