@@ -16,7 +16,7 @@ local standings
 
 function mod:ShouldShow(i)
   local name = GetGuildRosterInfo(i)
-  local online = select(8, GetGuildRosterInfo(i))
+  local online = select(9, GetGuildRosterInfo(i))
   if not self.db.profile.show_offline and not online then return false end
   if self.db.profile.show_raid_only and UnitInRaid("player") and not UnitInRaid(name) then return false end
   local info = EPGP:GetMemberInfo(name)
@@ -42,6 +42,10 @@ mod.GuildRosterUpdate = EPGP.Profile(
   BuildStandings, "Updating standings (GuildRosterUpdate)")
 mod.BaseGPChanged = EPGP.Profile(
   BuildStandings, "Updating standings (BaseGPChanged)")
+mod.ShowOfflineChanged = EPGP.Profile(
+  BuildStandings, "Updating standings (ShowOfflineChanged)")
+mod.ShowRaidOnlyChange = EPGP.Profile(
+  BuildStandings, "Updating standings (ShowRaidOnlyChanged)")
 
 local function BuildComparator(...)
   local chunks = {}
@@ -112,7 +116,7 @@ end
 
 function EPGP:SetStandingsShowOffline(v)
   mod.db.profile.show_offline = v
-  BuildStandings(mod)
+  mod:ShowOfflineChanged()
 end
 
 function EPGP:GetStandingsShowRaidOnly()
@@ -121,7 +125,7 @@ end
 
 function EPGP:SetStandingsShowRaidOnly(v)
   mod.db.profile.show_raid_only = v
-  BuildStandings(mod)
+  mod:ShowRaidOnlyChanged()
 end
 
 function EPGP:CanAwardStandings(reason, delta_ep)
@@ -129,6 +133,7 @@ function EPGP:CanAwardStandings(reason, delta_ep)
 end
 
 function EPGP:AwardStandings(reason, delta_ep, raid_only, online_only)
+  assert(self:CanAwardStandings(reason, delta_ep))
   if raid_only == nil then raid_only = mod.db.profile.show_raid_only end
   if online_only == nil then online_only = not mod.db.profile.show_offline end
   local function ShouldAward(i)
