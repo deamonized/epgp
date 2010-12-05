@@ -798,30 +798,16 @@ local function AddEPControls(frame, withRecurring)
   button:SetScript("OnUpdate", EnabledStatus)
 
   if withRecurring then
-    local recurring =
-      CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-    recurring:SetWidth(20)
-    recurring:SetHeight(20)
-    recurring:SetPoint("TOP", editBox, "BOTTOMLEFT")
-    recurring:SetPoint("LEFT", reasonLabel)
-    recurring:SetScript(
-      "OnUpdate",
-      function (self)
-        if EPGP:RunningRecurringEP() then
-          self:Enable()
-        else
-          EnabledStatus(self)
-        end
-      end)
-
     local label =
       frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     label:SetText(L["Recurring"])
-    label:SetPoint("LEFT", recurring, "RIGHT")
+    label:SetPoint("LEFT", reasonLabel)
+    label:SetPoint("TOP", editBox, "BOTTOM")
 
     local timePeriod =
       frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    timePeriod:SetJustifyH("RIGHT")
+    timePeriod:SetJustifyH("CENTER")
+    -- timePeriod is updated by decButton's OnUpdate.
 
     local incButton = CreateFrame("Button", nil, frame)
     incButton:SetNormalTexture(
@@ -832,6 +818,15 @@ local function AddEPControls(frame, withRecurring)
       "Interface\\MainMenuBar\\UI-MainMenu-ScrollUpButton-Disabled")
     incButton:SetWidth(24)
     incButton:SetHeight(24)
+    incButton:SetScript(
+      "OnUpdate",
+      function (self)
+        if EPGP:IsRecurringAwardRunning() then
+          self:Disable()
+        else
+          self:Enable()
+        end
+      end)
 
     local decButton = CreateFrame("Button", nil, frame)
     decButton:SetNormalTexture(
@@ -842,48 +837,81 @@ local function AddEPControls(frame, withRecurring)
       "Interface\\MainMenuBar\\UI-MainMenu-ScrollDownButton-Disabled")
     decButton:SetWidth(24)
     decButton:SetHeight(24)
+    decButton:SetScript(
+      "OnUpdate",
+      function (self)
+        local period_mins = EPGP:GetRecurringAwardPeriodMinutes()
+        local fmt, val = SecondsToTimeAbbrev(period_mins * 60)
+        timePeriod:SetText(fmt:format(val))
+        if EPGP:IsRecurringAwardRunning() or period_mins <= 1 then
+          self:Disable()
+        else
+          self:Enable()
+        end
+      end)
 
-    decButton:SetPoint("RIGHT", -15, 0)
-    decButton:SetPoint("TOP", recurring, "TOP")
+    local startButton =
+      CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    startButton:SetNormalFontObject("GameFontNormalSmall")
+    startButton:SetHighlightFontObject("GameFontHighlightSmall")
+    startButton:SetDisabledFontObject("GameFontDisableSmall")
+    startButton:SetHeight(BUTTON_HEIGHT)
+    startButton:SetText(L["Start"])
+    startButton:SetWidth(startButton:GetTextWidth() + BUTTON_TEXT_PADDING)
+    startButton:SetScript(
+      "OnUpdate",
+      function (self)
+        if EPGP:IsRecurringAwardRunning() then
+          self:Disable()
+        else
+          EnabledStatus(self)
+        end
+      end)
+
+    local stopButton =
+      CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    stopButton:SetNormalFontObject("GameFontNormalSmall")
+    stopButton:SetHighlightFontObject("GameFontHighlightSmall")
+    stopButton:SetDisabledFontObject("GameFontDisableSmall")
+    stopButton:SetHeight(BUTTON_HEIGHT)
+    stopButton:SetText(L["Stop"])
+    stopButton:SetWidth(stopButton:GetTextWidth() + BUTTON_TEXT_PADDING)
+    stopButton:SetScript(
+      "OnUpdate",
+      function (self)
+        if EPGP:IsRecurringAwardRunning() then
+          self:Enable()
+        else
+          self:Disable()
+        end
+      end)
+
+    stopButton:SetPoint("RIGHT", otherEditBox, "RIGHT")
+    stopButton:SetPoint("TOP", label, "BOTTOM")
+    startButton:SetPoint("RIGHT", stopButton, "LEFT")
+    startButton:SetPoint("TOP", stopButton)
+    decButton:SetPoint("RIGHT", startButton, "LEFT")
     incButton:SetPoint("RIGHT", decButton, "LEFT", 8, 0)
     timePeriod:SetPoint("RIGHT", incButton, "LEFT")
-
-    function frame:UpdateTimeControls()
-      local period_mins = EPGP:RecurringEPPeriodMinutes()
-      local fmt, val = SecondsToTimeAbbrev(period_mins * 60)
-      timePeriod:SetText(fmt:format(val))
-      recurring:SetChecked(EPGP:RunningRecurringEP())
-      if period_mins == 1 or EPGP:RunningRecurringEP() then
-        decButton:Disable()
-      else
-        decButton:Enable()
-      end
-      if EPGP:RunningRecurringEP() then
-        incButton:Disable()
-      else
-        incButton:Enable()
-      end
-    end
 
     incButton:SetScript(
       "OnClick",
       function(self)
-        local period_mins = EPGP:RecurringEPPeriodMinutes()
-        EPGP:RecurringEPPeriodMinutes(period_mins + 1)
-        self:GetParent():UpdateTimeControls()
+        local period_mins = EPGP:GetRecurringAwardPeriodMinutes()
+        EPGP:SetRecurringAwardPeriodMinutes(period_mins + 1)
       end)
 
     decButton:SetScript(
       "OnClick",
       function(self)
-        local period_mins = EPGP:RecurringEPPeriodMinutes()
-        EPGP:RecurringEPPeriodMinutes(period_mins - 1)
-        self:GetParent():UpdateTimeControls()
+        local period_mins = EPGP:GetRecurringAwardPeriodMinutes()
+        EPGP:SetRecurringAwardPeriodMinutes(period_mins - 1)
       end)
 
-    frame.recurring = recurring
     frame.incButton = incButton
     frame.decButton = decButton
+    frame.startButton = startButton
+    frame.stopButton = stopButton
   end
 
   frame:SetHeight(
@@ -893,7 +921,7 @@ local function AddEPControls(frame, withRecurring)
     otherEditBox:GetHeight() +
     label:GetHeight() +
     button:GetHeight() +
-    (withRecurring and frame.recurring:GetHeight() or 0))
+    (withRecurring and frame.startButton:GetHeight() or 0))
 
   frame.reasonLabel = reasonLabel
   frame.dropDown = dropDown
@@ -912,9 +940,6 @@ local function AddEPControls(frame, withRecurring)
       self.otherEditBox:SetAlpha(0.25)
       self.otherEditBox:EnableKeyboard(false)
       self.otherEditBox:EnableMouse(false)
-      if self.UpdateTimeControls then
-        self:UpdateTimeControls()
-      end
     end)
 end
 
@@ -988,7 +1013,7 @@ local function CreateEPGPSideFrame2()
 
   f:Hide()
   f:SetWidth(225)
-  f:SetHeight(165)
+  f:SetHeight(185)
   f:SetPoint("BOTTOMLEFT", EPGPFrame, "BOTTOMRIGHT", -33, 72)
 
   f:SetBackdrop(
@@ -1019,21 +1044,22 @@ local function CreateEPGPSideFrame2()
       EPGP:AwardStandings(reason, amount)
     end)
 
-  epFrame.recurring:SetScript(
+  epFrame.startButton:SetScript(
     "OnClick",
     function(self)
-      if not EPGP:RunningRecurringEP() then
-        local reason = UIDropDownMenu_GetText(epFrame.dropDown)
-        if reason == L["Other"] then
-          reason = epFrame.otherEditBox:GetText()
-        end
-        local amount = epFrame.editBox:GetNumber()
-        EPGP:StartRecurringEP(reason, amount)
-      else
-        EPGP:StopRecurringEP()
+      local reason = UIDropDownMenu_GetText(epFrame.dropDown)
+      if reason == L["Other"] then
+        reason = epFrame.otherEditBox:GetText()
       end
-      self:GetParent():UpdateTimeControls()
+      EPGP:StartRecurringAward(reason)
     end)
+  epFrame.stopButton:SetScript(
+    "OnClick",
+    function(self)
+      EPGP:StopRecurringAward()
+    end)
+
+
 end
 
 local function CreateEPGPFrameStandings()
@@ -1096,13 +1122,8 @@ local function CreateEPGPFrameStandings()
   f:SetWidth(t1:GetStringWidth() + t2:GetStringWidth() +
              4 * tl:GetWidth() + cb:GetWidth() + cb2:GetWidth())
 
-  -- Make the log frame
   CreateEPGPLogFrame()
-
-  -- Make the side frame
   CreateEPGPSideFrame()
-
-  -- Make the second side frame
   CreateEPGPSideFrame2()
 
   -- Make the main frame
@@ -1170,26 +1191,6 @@ local function CreateEPGPFrameStandings()
   recurringTime:SetJustifyH("CENTER")
   recurringTime:SetPoint("LEFT", award, "RIGHT")
   recurringTime:SetPoint("RIGHT", decay, "LEFT")
-  recurringTime:Hide()
-  function recurringTime:StartRecurringAward()
-    self:Show()
-  end
-  function recurringTime:ResumeRecurringAward()
-    self:Show()
-  end
-  function recurringTime:StopRecurringAward()
-    self:Hide()
-  end
-  function recurringTime:RecurringAwardUpdate(
-      event_type, reason, amount, time_left)
-    local fmt, val = SecondsToTimeAbbrev(time_left)
-    self:SetFormattedText(L["Next award in "] .. fmt, val)
-  end
-
-  EPGP.RegisterCallback(recurringTime, "StartRecurringAward")
-  EPGP.RegisterCallback(recurringTime, "ResumeRecurringAward")
-  EPGP.RegisterCallback(recurringTime, "StopRecurringAward")
-  EPGP.RegisterCallback(recurringTime, "RecurringAwardUpdate")
 
   -- Make the status text
   local statusText = main:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -1388,6 +1389,17 @@ local function CreateEPGPFrameStandings()
       rowFrame.needUpdate = true
       FauxScrollFrame_OnVerticalScroll(
         self, value, rowFrame.rowHeight, UpdateStandings)
+    end)
+  main:SetScript(
+    "OnUpdate",
+    function (self)
+      if EPGP:IsRecurringAwardRunning() then
+        recurringTime:Show()
+        local fmt, val = SecondsToTimeAbbrev(EPGP:GetRecurringAwardTimeLeft())
+        recurringTime:SetFormattedText(L["Next award in "] .. fmt, val)
+      else
+        recurringTime:Hide()
+      end
     end)
 end
 

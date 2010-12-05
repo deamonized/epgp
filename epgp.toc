@@ -53,6 +53,7 @@ modules\log.lua
 modules\loot.lua
 modules\master.lua
 modules\popups.lua
+modules\recurring.lua
 modules\slave.lua
 modules\standings.lua
 modules\ui.lua
