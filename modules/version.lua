@@ -27,8 +27,6 @@ function mod:ProcessVersionCheck(prefix, msg, type, sender)
   local version = ParseVersion(msg)
   local my_version = ParseVersion(EPGP.version)
   local comp = CompareVersions(my_version, version)
-  Debug("%s ~ %s -> %d",
-        table.concat(my_version, "."), table.concat(version, "."), comp)
   if comp == -1 then
     Debug("Our version is outdated %s (%s)", EPGP.version, msg)
     EPGP:Disable()
@@ -41,8 +39,6 @@ function mod:ProcessVersionCheck(prefix, msg, type, sender)
                          "WHISPER", sender, "BULK")
   end
 end
-
--- /script EPGP:GetModule("version"):SendCommMessage(EPGP.VERSION_CHECK, "6.0.2", "GUILD", nil, "BULK")
 
 --------------------------------------------------------------------------------
 
