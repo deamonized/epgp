@@ -1413,3 +1413,7 @@ function mod:OnModuleEnable()
   HideUIPanel(EPGPFrame)
   EPGPFrame:SetScript("OnShow", GuildRoster)
 end
+
+function mod:OnModuleDisable()
+  HideUIPanel(EPGPFrame)
+end

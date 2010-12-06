@@ -260,3 +260,11 @@ StaticPopupDialogs["EPGP_TRIM_LOG"] = {
     EPGP:GetModule("log"):TrimToOneMonth()
   end,
 }
+
+StaticPopupDialogs["EPGP_OLD_VERSION"] = {
+  text = L["Your are running EPGP v%s. At least one other player has EPGP v%s which is more recent. EPGP will now shutdown to avoid data corruption. Please update EPGP"],
+  button1 = OKAY,
+  hideOnEscape = 1,
+  timeout = 0,
+  whileDead = 1,
+}

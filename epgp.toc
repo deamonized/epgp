@@ -57,5 +57,6 @@ modules\recurring.lua
 modules\slave.lua
 modules\standings.lua
 modules\ui.lua
+modules\version.lua
 modules\warnings.lua
 modules\whisper.lua

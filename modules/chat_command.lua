@@ -61,6 +61,8 @@ function mod:ProcessChatCommand(str)
 end
 
 function mod:ToggleUI()
+  if self:IsDisabled() then return end
+
   if EPGPFrame and IsInGuild() then
     if EPGPFrame:IsShown() then
       HideUIPanel(EPGPFrame)

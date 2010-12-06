@@ -117,3 +117,4 @@ L["Wipe awards"] = true
 L["Wiped on %s. Award EP?"] = true
 L["You can now check your epgp standings and loot on the web: http://www.epgpweb.com"] = true
 L["You cannot undo this action!"] = true
+L["Your are running EPGP v%s. At least one other player has EPGP v%s which is more recent. EPGP will now shutdown to avoid data corruption. Please update EPGP"] = true
