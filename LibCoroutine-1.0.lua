@@ -47,19 +47,23 @@ function lib:Notification(...)
 
   local function SignalN(n)
     return function()
+             if hook then return hook() end
              if ret then return end
              ret = n
              AT:CancelTimer(timer_handle, true)
              timer_handler = nil
-             if notif._hook then notif._hook() end
              if co and coroutine.status(co) == "suspended" then
                coresume(co, ret)
              end
            end
   end
 
+  function notif.SetHook(f)
+    hook = f
+  end
+
   function notif.Signalled()
-    return ret ~= nil
+    return not not ret
   end
 
   notif.Signal = SignalN(1)
@@ -71,6 +75,9 @@ function lib:Notification(...)
     end
   end
   function notif.Wait(timeout)
+    -- If we wait on another notification after we used WaitForAny on
+    -- it it should work.
+    hook = nil
     if ret then return ret end
     co = coroutine.running()
     if timeout then
@@ -84,9 +91,8 @@ function lib:Notification(...)
       local n = select(i, ...)
       if n.Signalled() then return i+1 end
     end
-    co = coroutine.running()
     for i=1,select('#', ...) do
-      select(i, ...)._hook = SignalN(i+1)
+      select(i, ...).SetHook(SignalN(i+1))
     end
     return notif.Wait(timeout)
   end
@@ -166,7 +172,7 @@ function lib:UnitTest()
     print("wait on two notifications and signal one before wait is called")
     notif = lib:Notification()
     notif2 = lib:Notification()
-    notif2.Signal()
+    notif.Signal()
     print("done", "[ret=", lib:WaitOnAny(1, notif, notif2), "]")
 
     print("wait on two notifications and signal one after wait is called")
