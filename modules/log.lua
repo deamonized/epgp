@@ -344,7 +344,7 @@ mod.dbDefaults = {
 }
 
 function mod:OnModuleEnable()
-  EPGP:GetModule("slave"):RegisterMessage("ChangeAnnounced", AppendToLog)
+  EPGP:GetModule("slave").RegisterMessage(self, "ChangeAnnounced", AppendToLog)
   -- Upgrade the logs from older dbs
   if EPGP.db.profile.log then
     self.db.profile.log = EPGP.db.profile.log
