@@ -783,12 +783,12 @@ local function AddEPControls(frame, withRecurring)
   editBox:SetPoint("RIGHT", button, "LEFT")
   editBox:SetPoint("TOP", label, "BOTTOM")
 
-  local function EnabledStatus(self)
+  local function EnabledStatus(self, amount_override)
     local reason = UIDropDownMenu_GetText(dropDown)
     if reason == L["Other"] then
       reason = otherEditBox:GetText()
     end
-    local amount = editBox:GetNumber()
+    local amount = amount_override or editBox:GetNumber()
     if EPGP:CanChangeEPGP(reason, amount, 0) then
       self:Enable()
     else
@@ -864,7 +864,7 @@ local function AddEPControls(frame, withRecurring)
         if EPGP:IsRecurringAwardRunning() then
           self:Disable()
         else
-          EnabledStatus(self)
+          EnabledStatus(self, EPGP:GetRecurringAwardPeriodMinutes())
         end
       end)
 
