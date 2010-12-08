@@ -27,13 +27,18 @@ end
 --------------------------------------------------------------------------------
 -- These functions change the core interface.
 
-function EPGP:StartRecurringAward(reason, raid_only, online_only)
+function EPGP:CanStartRecurringAward(reason)
   local amount = mod.db.profile.period_mins  -- 1 EP per min.
-  assert(self:CanAwardStandings(reason, amount))
+  return self:CanAwardStandings(reason, amount)
+end
+
+function EPGP:StartRecurringAward(reason, raid_only, online_only)
+  assert(self:CanStartRecurringAward(reason))
   assert(not handle)
 
   if raid_only == nil then raid_only = self:GetStandingsShowRaidOnly() end
   if online_only == nil then online_only = not self:GetStandingsShowOffline() end
+  local amount = mod.db.profile.period_mins  -- 1 EP per min.
   mod.db.profile.next.reason = reason
   mod.db.profile.next.amount = amount
   mod.db.profile.next.raid_only = raid_only
