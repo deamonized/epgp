@@ -96,6 +96,12 @@ end
 
 function mod:OnModuleEnable()
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
+  -- Set defaults as necessary.
+  for var, def in pairs(global_config_defs) do
+    if not self.db.profile[var] then
+      self.db.profile[var] = def.default
+    end
+  end
 end
 
 --------------------------------------------------------------------------------
