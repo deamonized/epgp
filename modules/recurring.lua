@@ -17,10 +17,10 @@ local handle
 
 --------------------------------------------------------------------------------
 function mod:Tick()
-  EPGP:AwardStandings(self.db.profile.reason,
-                      self.db.profile.amount,
-                      self.db.profile.raid_only,
-                      self.db.profile.online_only)
+  EPGP:AwardStandings(self.db.profile.next.reason,
+                      self.db.profile.next.amount,
+                      self.db.profile.next.raid_only,
+                      self.db.profile.next.online_only)
   mod.db.profile.next.timestamp = GetTimestamp() + self:TimeLeft(handle)
 end
 
