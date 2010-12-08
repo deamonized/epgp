@@ -40,10 +40,10 @@ EPGP:SetDefaultModuleState(false)
 -- OnModuleInitialize, OnModuleEnable and OnModuleDisable instead.
 
 local moduleProto = {}
-function moduleProto:IsDisabled(self, i)
+function moduleProto.IsDisabled(self, i)
   return not self:IsEnabled()
 end
-function moduleProto:SetEnabled (self, i, v)
+function moduleProto.SetEnabled(self, i, v)
   if v then
     Debug("Enabling module: %s", self:GetName())
     self:Enable()
@@ -53,13 +53,13 @@ function moduleProto:SetEnabled (self, i, v)
   end
   self.db.profile.enabled = v
 end
-function moduleProto:GetDBVar(self, i)
+function moduleProto.GetDBVar(self, i)
   return self.db.profile[i[#i]]
 end
-function moduleProto:SetDBVar(self, i, v)
+function moduleProto.SetDBVar(self, i, v)
   self.db.profile[i[#i]] = v
 end
-function moduleProto:OnEnable()
+function moduleProto.OnEnable(self)
   -- If we are about to be enabled but the config says we should not,
   -- disable now.
   if not self.db.profile.enabled then
@@ -70,11 +70,11 @@ function moduleProto:OnEnable()
   if self.OnModuleEnable then self:OnModuleEnable() end
   Debug("Enabled module: %s", self:GetName())
 end
-function moduleProto:OnDisable()
+function moduleProto.OnDisable(self)
   if self.OnModuleDisable then self:OnModuleDisable() end
   Debug("Disabled module: %s", self:GetName())
 end
-function moduleProto:OnInitialize()
+function moduleProto.OnInitialize(self)
   if self.OnModuleInitialize then self:OnModuleInitialize() end
 end
 
@@ -214,6 +214,7 @@ function EPGP:OnInitialize()
   -- We register this event before we are even enabled because this
   -- event controls initialization.
   self:RegisterEvent("GUILD_ROSTER_UPDATE")
+  GuildRoster()
 end
 
 function EPGP:OnEnable()
@@ -228,6 +229,9 @@ function EPGP:OnEnable()
   for name, module in self:IterateModules() do
     module:SetEnabledState(true)
   end
+
+  -- Query guild roster every 15 seconds.
+  self:ScheduleTimer(GuildRoster, 15)
 
   Debug("Enabled EPGP")
 end
@@ -374,10 +378,29 @@ function EPGP.ParseChangeRequest(msg)
   return req
 end
 
+function EPGP.FormatChangeRequest(changer, ...)
+  local _, reason, delta_ep, delta_gp = ...
+  local victim_string = strjoin(", ", select(6, ...))
+  if delta_ep == 0 and delta_gp ~= 0 then
+    return L["%+d GP by %s (%s) to %s"]:format(
+      delta_gp, changer, reason, victim_string)
+  elseif delta_ep ~= 0 and delta_gp == 0 then
+    return L["%+d EP by %s (%s) to %s"]:format(
+      delta_ep, changer, reason, victim_string)
+  else
+    return L["%d EP, %d GP by %s (%s) to: %s"]:format(
+      delta_ep, delta_gp, changer, reason, victim_string)
+  end
+end
+
 function EPGP.ParseDecayRequest(msg)
   local id = msg:match("(%d+)")
   id = tonumber(id)
   return {id}
+end
+
+function EPGP.FormatDecayRequest(changer, ...)
+  return L["%s decayed"]:format(changer)
 end
 
 function EPGP.GetTimestamp()
