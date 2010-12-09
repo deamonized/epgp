@@ -10,7 +10,8 @@ if ChatThrottleLib then
                     end
 end
 
-function mod:AnnounceTo(medium, fmt, ...)
+function mod:Announce(msg)
+  local medium = self.db.profile.medium
   if not medium then return end
 
   local channel = GetChannelName(self.db.profile.channel or 0)
@@ -20,7 +21,6 @@ function mod:AnnounceTo(medium, fmt, ...)
     medium = "GUILD"
   end
 
-  local msg = string.format(fmt, ...)
   local str = "EPGP:"
   for _,s in pairs({strsplit(" ", msg)}) do
     if #str + #s >= 250 then
@@ -33,56 +33,18 @@ function mod:AnnounceTo(medium, fmt, ...)
   SendChatMessage(str, medium, nil, channel)
 end
 
-function mod:Announce(fmt, ...)
-  local medium = self.db.profile.medium
-
-  return mod:AnnounceTo(medium, fmt, ...)
+local function Wrapper(handler)
+  return function(self, kind, changer, ...)
+           if changer ~= UnitName("player") then return end
+           return handler(self, kind, changer, ...)
+         end
 end
 
-function mod:EPAward(event_name, name, reason, amount, mass)
-  if mass then return end
-  mod:Announce(L["%+d EP (%s) to %s"], amount, reason, name)
-end
+mod[EPGP.CHANGE_REQUEST] = Wrapper(
+  function(self, kind, ...) self:Announce(EPGP.FormatChangeRequest(...)) end)
 
-function mod:GPAward(event_name, name, reason, amount, mass)
-  if mass then return end
-  mod:Announce(L["%+d GP (%s) to %s"], amount, reason, name)
-end
-
-function mod:BankedItem(event_name, name, reason, amount, mass)
-  mod:Announce(L["%s to %s"], reason, name)
-end
-
-local function MakeCommaSeparated(t)
-  local first = true
-  local awarded = ""
-
-  for name in pairs(t) do
-    if first then
-      awarded = name
-      first = false
-    else
-      awarded = awarded..", "..name
-    end
-  end
-
-  return awarded
-end
-
-function mod:MassEPAward(event_name, names, reason, amount,
-                         extras_names, extras_reason, extras_amount)
-  local normal = MakeCommaSeparated(names)
-  mod:Announce(L["%+d EP (%s) to %s"], amount, reason, normal)
-
-  if extras_names then
-    local extras = MakeCommaSeparated(extras_names)
-    mod:Announce(L["%+d EP (%s) to %s"], extras_amount, extras_reason, extras)
-  end
-end
-
-function mod:Decay(event_name, decay_p)
-  mod:Announce(L["Decay of EP/GP by %d%%"], decay_p)
-end
+mod[EPGP.DECAY_REQUEST] = Wrapper(
+  function(self, kind, ...) self:Announce(EPGP.FormatDecayRequest(...)) end)
 
 function mod:StartRecurringAward(event_name, reason, amount, mins)
   local fmt, val = SecondsToTimeAbbrev(mins * 60)
@@ -143,17 +105,14 @@ mod.optionsArgs = {
   events = {
     order = 12,
     type = "multiselect",
-    name = L["Announce when:"],
+    name = L["Announce on:"],
     values = {
-      EPAward = L["A member is awarded EP"],
-      MassEPAward = L["Guild or Raid are awarded EP"],
-      GPAward = L["A member is credited GP"],
-      BankedItem = L["An item was disenchanted or deposited into the guild bank"],
-      Decay = L["EPGP decay"],
-      StartRecurringAward = L["Recurring awards start"],
-      StopRecurringAward = L["Recurring awards stop"],
-      ResumeRecurringAward = L["Recurring awards resume"],
-      EPGPReset = L["EPGP reset"],
+      [EPGP.CHANGE_REQUEST] = L["EP and/or GP awards"],
+      [EPGP.DECAY_REQUEST] = L["EPGP decay"],
+      --StartRecurringAward = L["Recurring awards start"],
+      --StopRecurringAward = L["Recurring awards stop"],
+      --ResumeRecurringAward = L["Recurring awards resume"],
+      --EPGPReset = L["EPGP reset"],
     },
     width = "full",
     get = "GetEvent",
@@ -168,10 +127,10 @@ end
 function mod:SetEvent(i, e, v)
   if v then
     Debug("Enabling announce of: %s", e)
-    EPGP.RegisterCallback(self, e)
+    EPGP:GetModule("slave").RegisterMessage(self, e)
   else
     Debug("Disabling announce of: %s", e)
-    EPGP.UnregisterCallback(self, e)
+    EPGP:GetModule("slave").UnregisterMessage(self, e)
   end
   self.db.profile.events[e] = v
 end
@@ -180,11 +139,11 @@ function mod:OnModuleEnable()
   for e, _ in pairs(mod.optionsArgs.events.values) do
     if self.db.profile.events[e] then
       Debug("Enabling announce of: %s (startup)", e)
-      EPGP.RegisterCallback(self, e)
+      EPGP:GetModule("slave").RegisterMessage(self, e)
     end
   end
 end
 
 function mod:OnModuleDisable()
-  EPGP.UnregisterAllCallbacks(self)
+  EPGP:GetModule("slave").UnregisterAllCallbacks(self)
 end
