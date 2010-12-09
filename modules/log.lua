@@ -32,7 +32,7 @@ local GetTimestamp = EPGP.GetTimestamp
 
 local LOG_FORMAT = "LOG:%d\31%s\31%s\31%s\31%d"
 
-local function AppendToLog(kind, ...)
+local function AppendToLog(...)
   -- Clear the redo table
   for k,_ in ipairs(mod.db.profile.redo) do
     mod.db.profile.redo[k] = nil
@@ -44,42 +44,25 @@ end
 
 local function LogRecordToString(timestamp, kind, ...)
   local nice_timestamp = date("%Y-%m-%d %H:%M", timestamp)
-
+  local formatted_record
   if kind == EPGP.DECAY_REQUEST then
-    local changer = ...
-    return string.format(L["%s: %s decayed"], nice_timestamp, changer)
+    formatted_record = EPGP.FormatDecayRequest(...)
   elseif kind == EPGP.CHANGE_REQUEST then
-    local changer, _, reason, delta_ep, delta_gp = ...
-    local victim_string = strjoin(", ", select(6, ...))
-    if delta_ep == 0 and delta_gp ~= 0 then
-      return string.format(L["%s: %+d GP by %s (%s) to %s"],
-                           nice_timestamp, delta_gp, changer,
-			   reason, victim_string)
-    elseif delta_ep ~= 0 and delta_gp == 0 then
-      return string.format(L["%s: %+d EP by %s (%s) to %s"],
-                           nice_timestamp, delta_ep, changer,
-			   reason, victim_string)
-    else
-      return string.format(L["%s: %d EP, %d GP by %s (%s) to: %s"],
-                           nice_timestamp, delta_ep, delta_gp, changer,
-			   reason, victim_string)
-    end
+    formatted_record = EPGP.FormatChangeRequest(...)
   else
     -- These are wotlk-structured entries
     local name, reason, amount = ...
     if kind == "EP" then
-      return string.format(L["%s: %+d EP (%s) to %s"],
-                           nice_timestamp, amount, reason, name)
+      formatted_record = L["%+d EP (%s) to %s"]:format(amount, reason, name)
     elseif kind == "GP" then
-      return string.format(L["%s: %+d GP (%s) to %s"],
-                           nice_timestamp, amount, reason, name)
+      formatted_record = L["%+d GP (%s) to %s"]:format(amount, reason, name)
     elseif kind == "BI" then
-      return string.format(L["%s: %s to %s"],
-                           nice_timestamp, reason, name)
+      formatted_record = L["%s to %s"]:format(reason, name)
     else
-      return "(corrupt/malformed log entry)"
+      formatted_record = L["(corrupt/malformed log entry)"]
     end
   end
+  return nice_timestamp..": "..formatted_record
 end
 
 function mod:GetNumRecords()
@@ -344,7 +327,10 @@ mod.dbDefaults = {
 }
 
 function mod:OnModuleEnable()
-  EPGP:GetModule("slave").RegisterMessage(self, "ChangeAnnounced", AppendToLog)
+  EPGP:GetModule("slave").RegisterMessage(self, EPGP.CHANGE_REQUEST,
+                                          AppendToLog)
+  EPGP:GetModule("slave").RegisterMessage(self, EPGP.DECAY_REQUEST, AppendToLog)
+
   -- Upgrade the logs from older dbs
   if EPGP.db.profile.log then
     self.db.profile.log = EPGP.db.profile.log

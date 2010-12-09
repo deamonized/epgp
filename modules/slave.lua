@@ -31,7 +31,7 @@ function mod:ProcessChangeAnnounce(prefix, msg, type, sender)
   -- from request and then remove it.
   local idx, req = FindRequest(ann[1], ann[2])
   if req then
-    self:SendMessage("ChangeAnnounced", unpack(req))
+    self:SendMessage(unpack(req))
     Debug("Removing request %s:%d from our queue", ann[1], ann[2])
     tremove(self.db.profile.req_queue, idx)
   end
