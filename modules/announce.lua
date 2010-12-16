@@ -145,5 +145,5 @@ function mod:OnModuleEnable()
 end
 
 function mod:OnModuleDisable()
-  EPGP:GetModule("slave").UnregisterAllCallbacks(self)
+  EPGP:GetModule("slave").UnregisterAllMessages(self)
 end
