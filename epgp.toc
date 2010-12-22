@@ -39,7 +39,6 @@ LibLootNotify-1.0.lua
 localization\localization.xml
 
 core.lua
-epgp_recurring.lua
 
 modules\announce.lua
 modules\boss.lua
