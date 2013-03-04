@@ -1,4 +1,6 @@
 local mod = EPGP:NewModule("announce")
+local AceComm = LibStub("AceComm-3.0")
+AceComm:Embed(mod)
 
 local Debug = LibStub("LibDebug-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
@@ -115,7 +117,7 @@ function mod:LootEpics(event_name, loot)
     local _, _, itemRarity = GetItemInfo(itemLink)
     if itemRarity >= ITEM_QUALITY_EPIC then
       mod:Announce(itemLink)
-      lib:SendCommMessage("EPGPCORPSELOOT", tostring(itemLink))
+      mod:SendCommMessage("EPGPCORPSELOOT", tostring(itemLink), "GUILD", nil, "ALERT")
     end
   end
 end
